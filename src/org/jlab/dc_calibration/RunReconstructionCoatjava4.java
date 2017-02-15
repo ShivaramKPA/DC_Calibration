@@ -12,7 +12,8 @@ import org.jlab.io.base.DataBank;
 import org.jlab.io.base.DataEvent;
 import org.jlab.io.hipo.HipoDataSource;
 import org.jlab.io.hipo.HipoDataSync;
-import org.jlab.service.dc.DCHBEngineT2DConfig;
+import org.jlab.service.dc.DCHBEngineCalib;
+//import org.jlab.service.dc.DCHBEngineT2DConfig;
 
 /**
  *
@@ -26,7 +27,7 @@ public class RunReconstructionCoatjava4 {
      */
     //public static void main(String[] args) throws FileNotFoundException, EvioException {
     public static void main(String[] args) throws FileNotFoundException {
-
+        String iDir = "C:\\Users\\KPAdhikari\\Desktop\\BigFls\\CLAS12\\CalChal\\Cosmics\\";
         //String inputFile = "/Users/ziegler/Workdir/Distribution/coatjava-4a.0.0/gemc_generated.hipo";
         String inputFile = "C:\\Users\\KPAdhikari\\Desktop\\BigFls\\CLAS12\\FTonReal_3a.0.2_kpp_fulltorus_electron_fixed.hipo";
         //String inputFile = "C:\\Users\\KPAdhikari\\Desktop\\BigFls\\CLAS12\\CalChal\\GemcOp\\out_1234.hipo";
@@ -35,10 +36,12 @@ public class RunReconstructionCoatjava4 {
         //inputFile = "C:\\Users\\KPAdhikari\\Desktop\\BigFls\\CLAS12\\CalChal\\Cosmics\\kpp_Decoded_000761_Files0to2Comb.hipo";
         //String inputFile = args[0];
         //String outputFile = args[1];
+        inputFile = iDir + "kpp_Decoded_000809_Files1to6Comb.hipo";
 
         System.err.println(" \n[PROCESSING FILE] : " + inputFile);
 
-        DCHBEngineT2DConfig en = new DCHBEngineT2DConfig();
+        //DCHBEngineT2DConfig en = new DCHBEngineT2DConfig();
+        DCHBEngineCalib en = new DCHBEngineCalib();//2/14/17
         en.init();
         DCTBEngine en2 = new DCTBEngine();
         en2.init();
@@ -54,6 +57,7 @@ public class RunReconstructionCoatjava4 {
         //String outputFile = "src/files/pythia1234.hipo";
         outputFile = "src/files/cosmic_000708_090.hipo";
         outputFile = "src/files/kpp_000758_0to2.hipo";
+        outputFile = "src/files/kpp_000809_1to6.hipo";
         //outputFile = "src/files/kpp_000761_0to2.hipo";
         writer.open(outputFile);
         long t1 = 0;
@@ -71,7 +75,7 @@ public class RunReconstructionCoatjava4 {
             // Processing TB  
             en2.processDataEvent(event);
             //System.out.println("  EVENT "+counter);
-            if (counter > 25000) {
+            if (counter > 100000) {//25000) {
                 break;
             }
             if(counter%100==0)

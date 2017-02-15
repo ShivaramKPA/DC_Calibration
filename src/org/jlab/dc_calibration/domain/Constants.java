@@ -48,6 +48,7 @@ public final class Constants {
 
         //protected static final double tMaxSL[] = { 155.0, 165.0, 300.0, 320.0, 525.0, 550.0 };
         protected static final double tMaxSL[] = { 155.0, 165.0, 300.0, 320.0, 600.0, 650.0 };
-        protected static final double timeAxisMax[] = {300.0, 300.0, 650.0, 650.0, 650.0, 650.0};
+        //protected static final double timeAxisMax[] = {300.0, 300.0, 650.0, 650.0, 650.0, 650.0};
+        protected static final double timeAxisMax[] = {300.0, 300.0, 650.0, 650.0, 800.0, 850.0};
 	private Constants() {}
 }

@@ -52,7 +52,8 @@ public class DCFitFunctionForEachThBin implements FCNBase {
 			timeFunc = new DCTimeFunction(superlayer, thetaDeg, docaNorm, par);
 			double calcTime = isLinear ? timeFunc.linearFit() : timeFunc.nonLinearFit();
 
-			if (measTimeErr == measTimeErr && measTimeErr > 0.0 && docaNorm < 0.9) {
+			//if (measTimeErr == measTimeErr && measTimeErr > 0.0 && docaNorm < 0.9) {
+			if (measTimeErr == measTimeErr && measTimeErr > 0.0 && docaNorm < 0.8) { //2/15/17
 				delta = (measTime - calcTime) / measTimeErr; // error weighted deviation
 				chisq += delta * delta;
 			}

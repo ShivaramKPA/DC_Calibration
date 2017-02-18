@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Vector;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -45,6 +46,9 @@ import org.freehep.math.minuit.MnMigrad;
 import org.freehep.math.minuit.MnStrategy;
 import org.freehep.math.minuit.MnUserParameters;
 import org.jlab.dc_calibration.NTuple.NTuple;
+import static org.jlab.dc_calibration.domain.Constants.iSecMax;
+import static org.jlab.dc_calibration.domain.Constants.iSecMin;
+import static org.jlab.dc_calibration.domain.Constants.nFitPars;
 import org.jlab.groot.base.TStyle;
 import org.jlab.groot.data.GraphErrors;
 import org.jlab.groot.data.H1F;
@@ -86,6 +90,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
     private Map<Integer, Integer> wireMapTBHits;
     private Map<Integer, Double> timeMapTBHits;
     private Map<Integer, Double> trkDocaMapTBHits;
+    private Map<Integer, Double> timeResMapTBHits;
     private Map<Integer, Double> BMapTBHits;
     private Map<Integer, Integer> gSegmThBinMapTBSegments;
     private Map<Integer, Double> gSegmAvgWireTBSegments;
@@ -96,8 +101,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
     private EmbeddedCanvas sector3;
     private EmbeddedCanvas sector4;
     private EmbeddedCanvas sector5;
-    private EmbeddedCanvas sector6;
-
+    private EmbeddedCanvas sector6;    
     
     private EmbeddedCanvas sector1n;
     private EmbeddedCanvas sector2n;
@@ -112,6 +116,11 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
     private EmbeddedCanvas sector4Profiles;
     private EmbeddedCanvas sector5Profiles;
     private EmbeddedCanvas sector6Profiles;
+    private Map<Integer, EmbeddedCanvas> sectorsMap1 = new HashMap<Integer, EmbeddedCanvas>();
+    private Map<Integer, EmbeddedCanvas> sectorsMap2 = new HashMap<Integer, EmbeddedCanvas>();
+    private Map<Integer, EmbeddedCanvas> sectorsMap3 = new HashMap<Integer, EmbeddedCanvas>();
+    private Map<Integer, EmbeddedCanvas> sectorsMapProfiles = new HashMap<Integer, EmbeddedCanvas>();
+    private Map<Integer, EmbeddedCanvas> sectorsMapRes = new HashMap<Integer, EmbeddedCanvas>();
 
     private Map<Coordinate, GraphErrors> htime2DisDocaProfile = new HashMap<Coordinate, GraphErrors>();
     private Map<Coordinate, DCFitFunction> mapOfFitFunctions = new HashMap<Coordinate, DCFitFunction>();
@@ -129,7 +138,11 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
     private Map<Coordinate, DCFitDrawer> mapOfFitLinesOld = new HashMap<Coordinate, DCFitDrawer>();
     private Map<Coordinate, DCFitDrawerForXDoca> mapOfFitLinesXOld = new HashMap<Coordinate, DCFitDrawerForXDoca>();
 
-    private H2F testHist;
+    //private H1F timeRes;
+    private H2F testHist;//, timeResVsTrkDoca;
+    private Map<Coordinate, H1F> h1timeRes = new HashMap<Coordinate, H1F>();
+    private Map<Coordinate, H2F> h2timeResVsTrkDoca = new HashMap<Coordinate, H2F>();
+    
     private boolean acceptorder = false;
     private boolean isLinearFit;
 
@@ -314,7 +327,8 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
         }
                 
         double dMax;
-        for (int i = 0; i < nSectors; i++) {
+        //for (int i = 0; i < nSectors; i++) {
+        for (int i = iSecMin; i < iSecMax; i++) { //2/15/17: Looking only at the Sector2 (KPP) data (not to waste time in empty hists)            
             for (int j = 0; j < nSL; j++) {
                 dMax = 2 * wpdist[j];
                 for (int k = 0; k < nThBinsVz; k++) { // nThBinsVz theta bins +/-2
@@ -339,6 +353,47 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
                     h2timeVtrkDoca.get(new Coordinate(i, j, k)).setTitleY("Time (ns)");                    
                 }
             }
+        }
+        
+        for (int i = iSecMin; i < iSecMax; i++) { //2/15/17: Looking only at the Sector2 (KPP) data (not to waste time in empty hists)            
+            for (int j = 0; j < nSL; j++) {
+                    dMax = 2 * wpdist[j];
+                    hNm = String.format("timeResS%dSL%d", i, j);
+                    h1timeRes.put(new Coordinate(i, j), new H1F(hNm, 200, -1.0, 1.0));
+                    hTtl = String.format("residual (cm) (Sec=%d, SL=%d)", i, j + 1);
+                    h1timeRes.get(new Coordinate(i, j)).setTitle(hTtl);
+                    h1timeRes.get(new Coordinate(i, j)).setTitleX("residual");
+                    
+                    //h2timeResVsTrkDoca
+                    hNm = String.format("timeResVsTrkDocaS%dSL%d", i, j);
+                    h2timeResVsTrkDoca.put(new Coordinate(i, j), new H2F(hNm, 200, 0.0, 1.2*dMax, 200, -1.0, 1.0));
+                    hTtl = String.format("residual (cm) (Sec=%d, SL=%d)", i, j + 1);
+                    h2timeResVsTrkDoca.get(new Coordinate(i, j)).setTitle(hTtl);
+                    h2timeResVsTrkDoca.get(new Coordinate(i, j)).setTitleX("|trkDoca|");
+                    h2timeResVsTrkDoca.get(new Coordinate(i, j)).setTitleY("residual");
+            }
+        }
+    }
+    
+    private void createCanvasMaps() {
+        //private Map<Integer, EmbeddedCanvas> sectorsMap2 = new HashMap<Integer, EmbeddedCanvas>();
+        for (int i = 0; i < nSectors; i++) {
+            sectorsMap1.put(i,new EmbeddedCanvas());
+            sectorsMap2.put(i,new EmbeddedCanvas());
+            sectorsMap3.put(i,new EmbeddedCanvas());
+            sectorsMapProfiles.put(i,new EmbeddedCanvas());
+            sectorsMapRes.put(i,new EmbeddedCanvas());
+            
+            sectorsMap1.get(i).setSize(nThBinsVz * 400, nSL * 400);
+            sectorsMap1.get(i).divide(nThBinsVz, nSL);
+            sectorsMap2.get(i).setSize(nThBinsVz * 400, nSL * 400);
+            sectorsMap2.get(i).divide(nThBinsVz, nSL);
+            sectorsMap3.get(i).setSize(nThBinsVz * 400, nSL * 400);
+            sectorsMap3.get(i).divide(nThBinsVz, nSL);
+            sectorsMapProfiles.get(i).setSize(nThBinsVz * 400, nSL * 400);
+            sectorsMapProfiles.get(i).divide(nThBinsVz, nSL);
+            sectorsMapRes.get(i).setSize(2 * 400, nSL * 400); //col1 for Res, col2 for ResVsDoca
+            sectorsMapRes.get(i).divide(2, nSL);
         }
     }
     
@@ -461,6 +516,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
         wireMapTBHits = new HashMap<Integer, Integer>();
         timeMapTBHits = new HashMap<Integer, Double>();
         trkDocaMapTBHits = new HashMap<Integer, Double>();
+        timeResMapTBHits = new HashMap<Integer, Double>();
         BMapTBHits = new HashMap<Integer, Double>();
 
         bnkHits = (DataBank) event.getBank("TimeBasedTrkg::TBHits");
@@ -471,6 +527,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
             //trkDocaMapTBHits.put(bnkHits.getInt("id", j), bnkHits.getDouble("trkDoca", j));
             //BMapTBHits.put(bnkHits.getInt("id", j), bnkHits.getDouble("B", j));
             trkDocaMapTBHits.put(bnkHits.getInt("id", j), (double) bnkHits.getFloat("trkDoca", j));
+            timeResMapTBHits.put(bnkHits.getInt("id", j), (double) bnkHits.getFloat("timeResidual", j));
             BMapTBHits.put(bnkHits.getInt("id", j), (double) bnkHits.getFloat("B", j));
             //System.out.println("B = " + BMapTBHits.get(j));
             int docaBin = (int) (((double) bnkHits.getFloat("trkDoca", j) - (-0.8)) / 0.2);
@@ -524,6 +581,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
                 {
                     Double gTime = timeMapTBHits.get(new Integer(bnkSegs.getInt("Hit" + h + "_ID", j)));
                     Double gTrkDoca = trkDocaMapTBHits.get(new Integer(bnkSegs.getInt("Hit" + h + "_ID", j)));
+                    Double gTimeRes = timeResMapTBHits.get(new Integer(bnkSegs.getInt("Hit" + h + "_ID", j)));
                     if (gTime == null || gTrkDoca == null) {
                         continue;
                     }
@@ -535,6 +593,10 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
                         double docaNorm = gTrkDoca / docaMax;
                         h2timeVtrkDocaVZ.get(new Coordinate(sector - 1, superlayer - 1, thBnVz)).fill(Math.abs(docaNorm), gTime);
                         h2timeVtrkDoca.get(new Coordinate(sector - 1, superlayer - 1, thBnVz)).fill(Math.abs(gTrkDoca), gTime);
+                        if(Math.abs(thDeg)<30.0) {
+                            h1timeRes.get(new Coordinate(sector - 1, superlayer - 1)).fill(gTimeRes);
+                            h2timeResVsTrkDoca.get(new Coordinate(sector - 1, superlayer - 1)).fill(Math.abs(gTrkDoca), gTimeRes);
+                        }
                     }
                     // here I will fill a test histogram of superlay6 and thetabin6
                     if (bnkSegs.getInt("Hit" + h + "_ID", j) > -1 && thBnVz == 5 && superlayer == 6) {
@@ -555,8 +617,10 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
     }
 
     protected void drawHistograms() {
-        createCanvas();
-        for (int i = 0; i < nSectors; i++) {
+        //createCanvas();
+        createCanvasMaps();
+        //for (int i = 0; i < nSectors; i++) {
+        for (int i = iSecMin; i < iSecMax; i++) { //2/15/17: Looking only at the Sector2 (KPP) data (not to waste time in empty hists)
             for (int j = 0; j < nSL; j++) {
                 for (int k = 0; k < nThBinsVz; k++) {
                     htime2DisDocaProfile.put(new Coordinate(i, j, k), h2timeVtrkDocaVZ.get(new Coordinate(i, j, k)).getProfileX());
@@ -576,6 +640,94 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
         // Done running fitter
         // lets create lines we just fit
         createFitLines();
+        //drawSectorWiseCanvases();
+        drawSectorWiseCanvasMaps();
+        
+        // lets add the canvas's to the pane and draw it.
+        /////////////addToPane();  //Temprarily disabled 
+
+        // this is temp for testHist
+        EmbeddedCanvas test = new EmbeddedCanvas();
+        test.cd(0);
+        test.draw(testHist);
+        test.save("src/images/test.png");
+        
+        System.out.println("====================================");
+        System.out.println("Done with the fitting & drawing ...`");
+        System.out.println("====================================");
+    }
+
+    protected void drawSectorWiseCanvasMaps() {
+        int canvasPlace = 0;
+        String Title;
+        for (int j = 0; j < nSL; j++) {
+            for (int k = 0; k < nThBinsVz; k++) {                
+                for (int i = iSecMin; i < iSecMax; i++) { 
+                    //Title is common for all 3 types of canvases
+                    Title = "Sec="+ (i+1) + " SL=" + (j + 1) + " theta=(" + thEdgeVzL[k] + "," + thEdgeVzH[k] + ")";
+                    sectorsMap1.get(i).cd(canvasPlace);  
+                    sectorsMap1.get(i).draw(h2timeVtrkDocaVZ.get(new Coordinate(i, j, k))); 
+                    sectorsMap1.get(i).draw(mapOfFitLinesOld.get(new Coordinate(i, j, k)), "same");
+                    sectorsMap1.get(i).draw(mapOfFitLines.get(new Coordinate(i, j, k)), "same");                    
+                    sectorsMap1.get(i).getPad(j * nThBinsVz + k).setTitle(Title);
+                    sectorsMap1.get(i).setPadTitlesX("trkDoca/docaMax");
+                    sectorsMap1.get(i).setPadTitlesY("time (ns)");
+
+                    sectorsMap2.get(i).cd(canvasPlace);  
+                    sectorsMap2.get(i).draw(h2timeVtrkDoca.get(new Coordinate(i, j, k))); 
+                    sectorsMap2.get(i).draw(mapOfFitLinesXOld.get(new Coordinate(i, j, k)), "same");
+                    sectorsMap2.get(i).draw(mapOfFitLinesX.get(new Coordinate(i, j, k)), "same");                    
+                    sectorsMap2.get(i).getPad(j * nThBinsVz + k).setTitle(Title);
+                    sectorsMap2.get(i).setPadTitlesX("trkDoca");
+                    sectorsMap2.get(i).setPadTitlesY("time (ns)");
+                    
+                    //Save as SectorsMap2 but without drawing lines with individual theta-bin fits
+                    sectorsMap3.get(i).cd(canvasPlace);  
+                    sectorsMap3.get(i).draw(h2timeVtrkDoca.get(new Coordinate(i, j, k)));                     
+                    sectorsMap3.get(i).draw(mapOfFitLinesX.get(new Coordinate(i, j, k)), "same");                    
+                    sectorsMap3.get(i).getPad(j * nThBinsVz + k).setTitle(Title);
+                    sectorsMap3.get(i).setPadTitlesX("trkDoca");
+                    sectorsMap3.get(i).setPadTitlesY("time (ns)");
+                    
+                    sectorsMapProfiles.get(i).cd(canvasPlace);  
+                    sectorsMapProfiles.get(i).draw(h2timeVtrkDocaVZ.get(new Coordinate(i, j, k)).getProfileX()); 
+                    sectorsMapProfiles.get(i).draw(mapOfFitLines.get(new Coordinate(i, j, k)), "same");                                       
+                    sectorsMapProfiles.get(i).getPad(j * nThBinsVz + k).setTitle(Title);
+                    sectorsMapProfiles.get(i).setPadTitlesX("trkDoca/docaMax");
+                    sectorsMapProfiles.get(i).setPadTitlesY("time (ns)");
+                    canvasPlace++;
+                }
+            }   
+        }
+        
+        canvasPlace = 0;
+        for (int j = 0; j < nSL; j++) {                   
+            for (int i = iSecMin; i < iSecMax; i++) {     
+                    Title = "Sec="+ (i+1) + " SL=" + (j + 1);
+                    canvasPlace = 2*j;
+                    sectorsMapRes.get(i).cd(canvasPlace);  
+                    sectorsMapRes.get(i).draw(h1timeRes.get(new Coordinate(i, j)));                   
+                    sectorsMapRes.get(i).getPad(canvasPlace).setTitle(Title);
+                    sectorsMapRes.get(i).setPadTitlesX("residual (cm)");
+                    
+                    canvasPlace = 2*j + 1;
+                    sectorsMapRes.get(i).cd(canvasPlace);  
+                    sectorsMapRes.get(i).draw(h2timeResVsTrkDoca.get(new Coordinate(i, j)));                   
+                    sectorsMapRes.get(i).getPad(canvasPlace).setTitle(Title);
+                    sectorsMapRes.get(i).setPadTitlesX("|trkDoca| (cm)");
+                    sectorsMapRes.get(i).setPadTitlesY("residual (cm)"); 
+                }
+            }
+        
+        for (int i = iSecMin; i < iSecMax; i++) { 
+            sectorsMap1.get(i).save("src/images/sector"+(i+1)+".png");
+            sectorsMap2.get(i).save("src/images/sector"+(i+1)+"n2.png");
+            sectorsMap3.get(i).save("src/images/sector"+(i+1)+"n.png");
+            sectorsMapProfiles.get(i).save("src/images/sector"+(i+1)+"Profiles.png");
+            sectorsMapRes.get(i).save("src/images/sector"+(i+1)+"Residuals.png");
+        }
+    }
+    protected void drawSectorWiseCanvases() {
         int canvasPlace = 0;
         String Title;
         for (int j = 0; j < nSL; j++) {
@@ -734,21 +886,8 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
         sector4Profiles.save("src/images/sector4Profiles.png");
         sector5Profiles.save("src/images/sector5Profiles.png");
         sector6Profiles.save("src/images/sector6Profiles.png");
-        
-        // lets add the canvas's to the pane and draw it.
-        /////////////addToPane();  //Temprarily disabled 
-
-        // this is temp for testHist
-        EmbeddedCanvas test = new EmbeddedCanvas();
-        test.cd(0);
-        test.draw(testHist);
-        test.save("src/images/test.png");
-        
-        System.out.println("====================================");
-        System.out.println("Done with the fitting & drawing ...`");
-        System.out.println("====================================");
-    }
-
+}
+    
     protected void addToPane() {
         dcTabbedPane.addCanvasToPane("Sector 1", sector1);
         dcTabbedPane.addCanvasToPane("Sector 2", sector2);
@@ -775,6 +914,11 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 
         final int nFreePars = 4;
 
+        //Now get the previous fit parameters from CCDB 
+        ReadT2DparsFromCCDB rdTable = new ReadT2DparsFromCCDB();
+        double [][][] parsFromCCDB = new double [nSectors][nSL][nFitPars];//nFitPars = 9
+        parsFromCCDB = rdTable.parsFromCCDB;
+        
         // initial guess of tMax for the 6 superlayers (cell sizes are different for each)
         // This is one of the free parameters (par[2], but fixed for now.)
         //double tMaxSL[] = { 155.0, 165.0, 300.0, 320.0, 525.0, 550.0 }; //Moved to Constants.java
@@ -784,8 +928,9 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
         double pHigh[] = {prevFitPars[0] * 3.0, prevFitPars[1] * 5.0, tMaxSL[0] * 1.6, prevFitPars[3] * 1.6};
 
         Map<Coordinate, MnUserParameters> mapTmpUserFitParameters = new HashMap<Coordinate, MnUserParameters>();
-
-        for (int i = 0; i < nSectors; i++) {
+        double prevFitPar = 0.0;
+        //for (int i = 0; i < nSectors; i++) {
+        for (int i = iSecMin; i < iSecMax; i++) { //2/15/17: Looking only at the Sector2 (KPP) data (not to waste time in empty hists)
             for (int j = 0; j < nSL; j++) {
                 pLow[2] = tMaxSL[j] * 0.4;
                 pHigh[2] = tMaxSL[j] * 1.6;
@@ -796,10 +941,16 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
                         new DCFitFunction(h2timeVtrkDocaVZ, i, j, isLinearFit));
                 mapOfFitParameters.put(new Coordinate(i, j), new MnUserParameters());
                 for (int p = 0; p < nFreePars; p++) {
-                    mapOfFitParameters.get(new Coordinate(i, j)).add(parName[p], prevFitPars[p], parSteps[p], pLow[p], pHigh[p]);
+                    prevFitPar = prevFitPars[p]; //This is value set by hand (for now).
+                    prevFitPar = parsFromCCDB[i][j][p]; //this comes from CCDB
+                    mapOfFitParameters.get(new Coordinate(i, j)).add(parName[p], prevFitPar, parSteps[p], pLow[p], pHigh[p]);
                 }
-                mapOfFitParameters.get(new Coordinate(i, j)).setValue(2, tMaxSL[j]);// tMax for SLth superlayer
+                //mapOfFitParameters.get(new Coordinate(i, j)).setValue(2, tMaxSL[j]);// tMax for SLth superlayer 
+                //mapOfFitParameters.get(new Coordinate(i, j)).fix(0);
                 mapOfFitParameters.get(new Coordinate(i, j)).fix(1);
+                mapOfFitParameters.get(new Coordinate(i, j)).fix(2);
+                //mapOfFitParameters.get(new Coordinate(i, j)).fix(3);
+                
                 MnMigrad migrad
                         = new MnMigrad(mapOfFitFunctions.get(new Coordinate(i, j)), mapOfFitParameters.get(new Coordinate(i, j)));
                 FunctionMinimum min = migrad.minimize();
@@ -855,7 +1006,8 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 
         Map<Coordinate, MnUserParameters> mapTmpUserFitParameters = new HashMap<Coordinate, MnUserParameters>();
 
-        for (int i = 0; i < nSectors; i++) {
+        //for (int i = 0; i < nSectors; i++) {
+        for (int i = iSecMin; i < iSecMax; i++) { //2/15/17: Looking only at the Sector2 (KPP) data (not to waste time in empty hists)
             for (int j = 0; j < nSL; j++) {
                 pLow[2] = tMaxSL[j] * 0.8;
                 pHigh[2] = tMaxSL[j] * 1.2;
@@ -902,7 +1054,8 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 
     private void createFitLines() {
         double dMax;
-        for (int i = 0; i < nSectors; i++) {
+        //for (int i = 0; i < nSectors; i++) {
+          for (int i = iSecMin; i < iSecMax; i++) { //2/15/17: Looking only at the Sector2 (KPP) data (not to waste time in empty hists)
             for (int j = 0; j < nSL; j++) {
                 dMax = 2 * wpdist[j];
                 for (int k = 0; k < nThBinsVz; k++) {

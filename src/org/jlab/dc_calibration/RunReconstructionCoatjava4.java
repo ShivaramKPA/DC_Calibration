@@ -57,7 +57,7 @@ public class RunReconstructionCoatjava4 {
         //String outputFile = "src/files/pythia1234.hipo";
         outputFile = "src/files/cosmic_000708_090.hipo";
         outputFile = "src/files/kpp_000758_0to2.hipo";
-        outputFile = "src/files/kpp_000809_1to6.hipo";
+        outputFile = "src/files/kpp_000809_1to6i2.hipo";
         //outputFile = "src/files/kpp_000761_0to2.hipo";
         writer.open(outputFile);
         long t1 = 0;
@@ -75,7 +75,7 @@ public class RunReconstructionCoatjava4 {
             // Processing TB  
             en2.processDataEvent(event);
             //System.out.println("  EVENT "+counter);
-            if (counter > 100000) {//25000) {
+            if (counter > 50000) {//25000) {
                 break;
             }
             if(counter%100==0)

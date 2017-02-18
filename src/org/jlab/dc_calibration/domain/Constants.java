@@ -35,16 +35,19 @@ public final class Constants {
 	protected static final double[] wpdist = { 0.3861, 0.4042, 0.6219, 0.6586, 0.9351, 0.9780 };
 	protected static final int nSL = 6;
 	protected static final int nSectors = 6;
+        protected static final int iSecMin = 1, iSecMax = 2;//iSecMin = 0, iSecMax = 6;//iSecMin = 1, iSecMax = 2;
 	protected static final int nLayer = 6;
 	protected static final double[] docaBins = { -0.8, -0.6, -0.4, -0.2, -0.0, 0.2, 0.4, 0.6, 0.8 };
 	protected static final int nHists = 8;
 	protected static final int nTh = 9;
 	protected static final double[] thBins = { -60.0, -40.0, -20.0, -10.0, -1.0, 1.0, 10.0, 20.0, 40.0, 60.0 };
 
+        protected static final int nFitPars = 9;//v0, deltamn, tmax, distbeta, delta_bfield_coefficient, b1, b2, b3, b4;
 	//protected static final String parName[] = { "v0", "deltamn", "tmax1", "tmax2", "distbeta" };
-	protected static final String parName[] = { "v0", "deltamn", "tmax", "distbeta" };
+	//protected static final String parName[] = { "v0", "deltamn", "tmax", "distbeta", "delta_bfield_coefficient", "b1", "b2", "b3", "b4"};
+	protected static final String parName[] = { "v0", "deltamn", "tmax", "distbeta" };    
 	//protected static final double prevFitPars[] = { 62.92e-04, 1.35, 137.67, 148.02, 0.055 };
-	protected static final double prevFitPars[] = { 50e-04, 2.0, 137.67, 0.060 };
+	protected static final double prevFitPars[] = { 50e-04, 1.5, 137.67, 0.060 };
 
         //protected static final double tMaxSL[] = { 155.0, 165.0, 300.0, 320.0, 525.0, 550.0 };
         protected static final double tMaxSL[] = { 155.0, 165.0, 300.0, 320.0, 600.0, 650.0 };

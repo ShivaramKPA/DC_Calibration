@@ -217,7 +217,7 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
     private void addToButtonPanel() {
         // buttonPanel.add(bTestEvent);
         // buttonPanel.add(bReadRecDataIn);
-        // buttonPanel.add(bReconstruction);
+        //buttonPanel.add(bReconstruction);
         buttonPanel.add(bTimeToDistance);
         // buttonPanel.add(ccdbWriter);
         OrderOfAction(2); // this int in OrderOfAction is the number of buttons activated in this method
@@ -387,6 +387,44 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
         //listen();
     }
 
+    private void addListenersOld() { //Used till 2/18/17
+        listen();
+
+        System.out.println("isLinearFit = " + isLinearFit);
+        if (isLinearFit) {
+            System.out.println("You selected Linear Fit.");
+        } else {
+            System.out.println("You selected Non-Linear Fit.");
+        }
+        bFileChooser.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                OA.buttonstatus(e);
+                if (OA.isorderOk()) {
+                    chooseFiles(e);
+                    if (fileArray.size() == 0) {
+                        System.err.println("There are no files selected ");
+                        System.exit(1);
+                    }
+
+                    TimeToDistanceFitter e3 = new TimeToDistanceFitter(OA, fileArray, isLinearFit);
+                    //ReadRecDataForMinuitNewFileOldWay e3 = new ReadRecDataForMinuitNewFileOldWay(OA, fileArray, isLinearFit);
+                    bTimeToDistance.addActionListener(ee -> {
+                        new Thread(e3).start();
+                    });
+                }
+            }
+        });
+        
+        bReconstruction.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                System.out.println("Hi from bReconstruction button ... Remove it later ..");
+            }        
+        });
+        //listen();
+    }
+    
     private void listen() {
         frame.addWindowListener(this);
         try {

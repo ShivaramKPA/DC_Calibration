@@ -28,6 +28,7 @@ public class RunReconstructionCoatjava4 {
     //public static void main(String[] args) throws FileNotFoundException, EvioException {
     public static void main(String[] args) throws FileNotFoundException {
         String iDir = "C:\\Users\\KPAdhikari\\Desktop\\BigFls\\CLAS12\\CalChal\\Cosmics\\";
+        iDir = "/Users/kpadhikari/Desktop/BigFls/CLAS12/KPP/";
         //String inputFile = "/Users/ziegler/Workdir/Distribution/coatjava-4a.0.0/gemc_generated.hipo";
         String inputFile = "C:\\Users\\KPAdhikari\\Desktop\\BigFls\\CLAS12\\FTonReal_3a.0.2_kpp_fulltorus_electron_fixed.hipo";
         //String inputFile = "C:\\Users\\KPAdhikari\\Desktop\\BigFls\\CLAS12\\CalChal\\GemcOp\\out_1234.hipo";
@@ -37,6 +38,8 @@ public class RunReconstructionCoatjava4 {
         //String inputFile = args[0];
         //String outputFile = args[1];
         inputFile = iDir + "kpp_Decoded_000809_Files1to6Comb.hipo";
+        inputFile = iDir + "kpp_Decoded_000805_Files0to1Comb.hipo";
+        inputFile = iDir + "kpp_Decoded_000806_FilesAllComb.hipo";
 
         System.err.println(" \n[PROCESSING FILE] : " + inputFile);
 
@@ -59,6 +62,8 @@ public class RunReconstructionCoatjava4 {
         outputFile = "src/files/kpp_000758_0to2.hipo";
         outputFile = "src/files/kpp_000809_1to6i2.hipo";
         //outputFile = "src/files/kpp_000761_0to2.hipo";
+        outputFile = "src/files/kpp_000805_0to1i0.hipo";
+        outputFile = "src/files/kpp_000806_0Alli0.hipo";
         writer.open(outputFile);
         long t1 = 0;
         while (reader.hasEvent()) {
@@ -75,9 +80,7 @@ public class RunReconstructionCoatjava4 {
             // Processing TB  
             en2.processDataEvent(event);
             //System.out.println("  EVENT "+counter);
-            if (counter > 50000) {//25000) {
-                break;
-            }
+            //if (counter > 50000) {  break;   }
             if(counter%100==0)
                 System.out.println("run " + counter + " events");
             writer.writeEvent(event);

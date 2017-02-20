@@ -19,6 +19,7 @@ package org.jlab.dc_calibration.clients;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridLayout;
@@ -41,9 +42,11 @@ import javax.swing.Box;
 import javax.swing.ButtonGroup;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JRadioButton;
@@ -57,6 +60,7 @@ import javax.swing.text.JTextComponent;
 import javax.swing.text.TextAction;
 
 import org.jlab.dc_calibration.domain.OrderOfAction;
+import org.jlab.dc_calibration.domain.RunReconstructionCoatjava4;
 import org.jlab.dc_calibration.domain.TimeToDistanceFitter;
 
 public class DC_Calib extends WindowAdapter implements WindowListener, ActionListener, Runnable {
@@ -149,7 +153,7 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
         bTimeToDistance.setText("<html>" + "Run Time vs. Distance Fitter" + "</html>");
         ccdbWriter.setText("<html>" + "Send Results to CCDB" + "</html>");
 
-        bReconstruction.setPreferredSize(new Dimension(frameSize.width / 3, frameSize.height / 3));
+        //bReconstruction.setPreferredSize(new Dimension(frameSize.width / 3, frameSize.height / 3));
         bTimeToDistance.setPreferredSize(new Dimension(frameSize.width / 3, frameSize.height / 3));
 
     }
@@ -162,6 +166,7 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
         panelForVariousControls.setBorder(BorderFactory.createEtchedBorder());
         //addToOpenFilePanel(); //Moved below
         radioPanel = new JPanel(new GridLayout(0, 1));
+        addToRecoButton();
         addToRadioPanel();
         addToOpenFilePanel();//add File-chooser, radio panel etc to the control panel
 
@@ -185,12 +190,17 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
         bannerPanel.add(banner, BorderLayout.CENTER);
     }
 
-    private void addToOpenFilePanel() {
-        panelForVariousControls.add(radioPanel, BorderLayout.LINE_START);
-        //panelForVariousControls.add(bFileChooser, BorderLayout.CENTER);
+    private void addToOpenFilePanel() {  
+        //Pack bRec & radioPanel into subpanel1 & add to the main panel @ start
         JPanel subControlPanel1 = new JPanel(new BorderLayout());
-        subControlPanel1.add(bFileChooser, BorderLayout.LINE_START);
-        panelForVariousControls.add(subControlPanel1, BorderLayout.CENTER);
+        subControlPanel1.add(bReconstruction, BorderLayout.LINE_START);
+        subControlPanel1.add(radioPanel, BorderLayout.CENTER);
+        panelForVariousControls.add(subControlPanel1, BorderLayout.LINE_START);
+     
+        //Pack bFileChooser to another subpanel & add it to center of main Panel
+        JPanel subControlPanel2 = new JPanel(new BorderLayout());
+        subControlPanel2.add(bFileChooser, BorderLayout.LINE_START);
+        panelForVariousControls.add(subControlPanel2, BorderLayout.CENTER);
     }
 
     private void addToWelcomePanel() {
@@ -214,6 +224,56 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
         panelImg.add(imgLabel, BorderLayout.CENTER);
     }
 
+    private void addToRecoButton() {
+            bReconstruction.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                System.out.println("Reconstruction Button has been hit..");
+                createFrameForRecoControls();
+                //RunReconstructionCoatjava4 rec = new RunReconstructionCoatjava4();
+            }
+        });
+    }
+    
+    private void chooseInputFiles(JFileChooser iFC, ActionEvent evt) {
+        iFC.setMultiSelectionEnabled(true);
+        iFC.showOpenDialog(null);
+        fileList = iFC.getSelectedFiles();
+        fileArray = new ArrayList<String>();
+        for (File file : fileList) {
+            System.out.println("Ready to read file " + file);
+            fileArray.add(file.toString());
+        }
+    }
+    
+    private void createFrameForRecoControls() {
+        JDialog dialog = new JDialog();
+        dialog.setSize(200, 190);
+        dialog.setLayout(null);
+
+        JFileChooser inputFC = new JFileChooser();
+        JButton bFC = new JButton("Choose Input File", createImageIcon("/images/Open16.gif")); 
+        bFC.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                System.out.println("Input File Chooser button has been hit..");
+                chooseInputFiles(inputFC, e);                 
+            }
+        });        
+        bFC.setVisible(true);
+        bFC.setBounds(10,10,180,60);
+        dialog.add(bFC);
+
+        JButton button2 = new JButton("Enter Output File"); //Replace with JTextField
+        button2.setVisible(true);
+        button2.setBounds(10,100,180,60);
+        dialog.add(button2);
+
+        //Make dialog visible
+        dialog.setVisible(true); 
+
+    }
+    
     private void addToButtonPanel() {
         // buttonPanel.add(bTestEvent);
         // buttonPanel.add(bReadRecDataIn);
@@ -383,44 +443,6 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
                     });
                 }
             }
-        });
-        //listen();
-    }
-
-    private void addListenersOld() { //Used till 2/18/17
-        listen();
-
-        System.out.println("isLinearFit = " + isLinearFit);
-        if (isLinearFit) {
-            System.out.println("You selected Linear Fit.");
-        } else {
-            System.out.println("You selected Non-Linear Fit.");
-        }
-        bFileChooser.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                OA.buttonstatus(e);
-                if (OA.isorderOk()) {
-                    chooseFiles(e);
-                    if (fileArray.size() == 0) {
-                        System.err.println("There are no files selected ");
-                        System.exit(1);
-                    }
-
-                    TimeToDistanceFitter e3 = new TimeToDistanceFitter(OA, fileArray, isLinearFit);
-                    //ReadRecDataForMinuitNewFileOldWay e3 = new ReadRecDataForMinuitNewFileOldWay(OA, fileArray, isLinearFit);
-                    bTimeToDistance.addActionListener(ee -> {
-                        new Thread(e3).start();
-                    });
-                }
-            }
-        });
-        
-        bReconstruction.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                System.out.println("Hi from bReconstruction button ... Remove it later ..");
-            }        
         });
         //listen();
     }

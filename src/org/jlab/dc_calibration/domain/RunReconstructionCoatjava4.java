@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package org.jlab.dc_calibration;
+package org.jlab.dc_calibration.domain;
 
 import java.io.FileNotFoundException;
 import org.jlab.service.dc.DCHBEngine;
@@ -25,8 +25,7 @@ public class RunReconstructionCoatjava4 {
      * @param args the command line arguments
      * @throws java.io.FileNotFoundException
      */
-    //public static void main(String[] args) throws FileNotFoundException, EvioException {
-    public static void main(String[] args) throws FileNotFoundException {
+    public RunReconstructionCoatjava4() {
         String iDir = "C:\\Users\\KPAdhikari\\Desktop\\BigFls\\CLAS12\\CalChal\\Cosmics\\";
         iDir = "/Users/kpadhikari/Desktop/BigFls/CLAS12/KPP/";
         //String inputFile = "/Users/ziegler/Workdir/Distribution/coatjava-4a.0.0/gemc_generated.hipo";
@@ -87,8 +86,12 @@ public class RunReconstructionCoatjava4 {
         }
         writer.close();
         double t = System.currentTimeMillis() - t1;
-        System.out.println(t1 + " TOTAL  PROCESSING TIME = " + (t / (float) counter));
-
+        System.out.println(t1 + " TOTAL  PROCESSING TIME = " + (t / (float) counter));        
+    }
+    
+    //public static void main(String[] args) throws FileNotFoundException, EvioException {
+    public static void main(String[] args) throws FileNotFoundException {
+        RunReconstructionCoatjava4 rec = new RunReconstructionCoatjava4();
     }
 
 }

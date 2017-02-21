@@ -25,7 +25,21 @@ public class RunReconstructionCoatjava4 {
      * @param args the command line arguments
      * @throws java.io.FileNotFoundException
      */
+
+    
     public RunReconstructionCoatjava4() {
+        String iDir = "/Users/kpadhikari/Desktop/BigFls/CLAS12/KPP/";
+        String[] results = null;
+        results[0] = iDir + "kpp_Decoded_000806_FilesAllComb.hipo"; 
+        results[1] = "0"; 
+        RunReconstruction(results);
+    }
+    
+    public RunReconstructionCoatjava4(String[] results) {
+        RunReconstruction(results);
+    }
+    
+    public void RunReconstruction(String[] results) {
         String iDir = "C:\\Users\\KPAdhikari\\Desktop\\BigFls\\CLAS12\\CalChal\\Cosmics\\";
         iDir = "/Users/kpadhikari/Desktop/BigFls/CLAS12/KPP/";
         //String inputFile = "/Users/ziegler/Workdir/Distribution/coatjava-4a.0.0/gemc_generated.hipo";
@@ -39,6 +53,7 @@ public class RunReconstructionCoatjava4 {
         inputFile = iDir + "kpp_Decoded_000809_Files1to6Comb.hipo";
         inputFile = iDir + "kpp_Decoded_000805_Files0to1Comb.hipo";
         inputFile = iDir + "kpp_Decoded_000806_FilesAllComb.hipo";
+        inputFile = results[0];
 
         System.err.println(" \n[PROCESSING FILE] : " + inputFile);
 
@@ -63,6 +78,7 @@ public class RunReconstructionCoatjava4 {
         //outputFile = "src/files/kpp_000761_0to2.hipo";
         outputFile = "src/files/kpp_000805_0to1i0.hipo";
         outputFile = "src/files/kpp_000806_0Alli0.hipo";
+        outputFile = "src/files/kpp_000806_Iter" + results[1] + ".hipo";
         writer.open(outputFile);
         long t1 = 0;
         while (reader.hasEvent()) {

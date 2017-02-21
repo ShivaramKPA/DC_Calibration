@@ -58,6 +58,7 @@ import javax.swing.text.DefaultCaret;
 import javax.swing.text.DefaultEditorKit;
 import javax.swing.text.JTextComponent;
 import javax.swing.text.TextAction;
+import org.jlab.dc_calibration.domain.DialogForRec;
 
 import org.jlab.dc_calibration.domain.OrderOfAction;
 import org.jlab.dc_calibration.domain.RunReconstructionCoatjava4;
@@ -227,10 +228,18 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
     private void addToRecoButton() {
             bReconstruction.addActionListener(new ActionListener() {
             @Override
-            public void actionPerformed(ActionEvent e) {
+            public void actionPerformed(ActionEvent ae) {
                 System.out.println("Reconstruction Button has been hit..");
-                createFrameForRecoControls();
+                //createDialogForRecControls();
                 //RunReconstructionCoatjava4 rec = new RunReconstructionCoatjava4();
+                String choice = ae.getActionCommand();
+                if (choice.equals("Quit")) {
+                    System.exit(0);
+                }   
+                //else if (choice.equals("Enter data")) {
+                else {
+                    createDialogForRecControls();
+                }
             }
         });
     }
@@ -246,32 +255,16 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
         }
     }
     
-    private void createFrameForRecoControls() {
-        JDialog dialog = new JDialog();
-        dialog.setSize(200, 190);
-        dialog.setLayout(null);
-
-        JFileChooser inputFC = new JFileChooser();
-        JButton bFC = new JButton("Choose Input File", createImageIcon("/images/Open16.gif")); 
-        bFC.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                System.out.println("Input File Chooser button has been hit..");
-                chooseInputFiles(inputFC, e);                 
-            }
-        });        
-        bFC.setVisible(true);
-        bFC.setBounds(10,10,180,60);
-        dialog.add(bFC);
-
-        JButton button2 = new JButton("Enter Output File"); //Replace with JTextField
-        button2.setVisible(true);
-        button2.setBounds(10,100,180,60);
-        dialog.add(button2);
-
-        //Make dialog visible
-        dialog.setVisible(true); 
-
+    private void createDialogForRecControls() {
+        DialogForRec dlg = new DialogForRec(frame);
+        String[] results = dlg.run();
+        if (results[0] != null) {
+            JOptionPane.showMessageDialog(frame,
+                    "Input file: " + results[0] + "\nOutput file: " + results[1]); 
+            
+            //Now make RunReconstructionCoatjava4() take results as input arg & control IP & OP files
+            RunReconstructionCoatjava4 rec = new RunReconstructionCoatjava4(results);
+        }
     }
     
     private void addToButtonPanel() {

@@ -5,7 +5,9 @@
  */
 package org.jlab.dc_calibration.domain;
 
+import java.io.File;
 import java.io.FileNotFoundException;
+import javax.swing.JFileChooser;
 import org.jlab.service.dc.DCHBEngine;
 import org.jlab.service.dc.DCTBEngine;
 import org.jlab.io.base.DataBank;
@@ -29,7 +31,7 @@ public class RunReconstructionCoatjava4 {
     
     public RunReconstructionCoatjava4() {
         String iDir = "/Users/kpadhikari/Desktop/BigFls/CLAS12/KPP/";
-        String[] results = null;
+        String[] results = new String[2];
         results[0] = iDir + "kpp_Decoded_000806_FilesAllComb.hipo"; 
         results[1] = "0"; 
         RunReconstruction(results);
@@ -77,8 +79,11 @@ public class RunReconstructionCoatjava4 {
         outputFile = "src/files/kpp_000809_1to6i2.hipo";
         //outputFile = "src/files/kpp_000761_0to2.hipo";
         outputFile = "src/files/kpp_000805_0to1i0.hipo";
-        outputFile = "src/files/kpp_000806_0Alli0.hipo";
-        outputFile = "src/files/kpp_000806_Iter" + results[1] + ".hipo";
+        outputFile = "src/files/kpp_000806_0Alli0.hipo";        
+        String fName = results[0];
+        String runNum = fName.substring(41, 47);
+        //outputFile = "src/files/kpp_000806_Iter" + results[1] + ".hipo";
+        outputFile = "src/files/kpp_"+ runNum + "_Iter" + results[1] + ".hipo";
         writer.open(outputFile);
         long t1 = 0;
         while (reader.hasEvent()) {

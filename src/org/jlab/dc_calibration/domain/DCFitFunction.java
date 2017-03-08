@@ -78,6 +78,9 @@ public class DCFitFunction implements FCNBase {
          */
         int discardThBins = 4;
         for (int th = 0 + discardThBins; th < nThBinsVz - discardThBins; th++) {
+            //discard central bin (i.e. the bin around zero-degree) to avoid bad relolution events
+            //if(th == (nThBinsVz/2)) {continue;}
+            
             thetaDeg = 0.5 * (thEdgeVzL[th] + thEdgeVzH[th]);
             profileX = h2timeVtrkDoca.get(new Coordinate(sector, superlayer, th)).getProfileX();
             for (int i = 0; i < profileX.getDataSize(0); i++) {

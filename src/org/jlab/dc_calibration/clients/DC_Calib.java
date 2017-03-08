@@ -59,6 +59,8 @@ import javax.swing.text.DefaultEditorKit;
 import javax.swing.text.JTextComponent;
 import javax.swing.text.TextAction;
 import org.jlab.dc_calibration.domain.DialogForRec;
+import org.jlab.dc_calibration.domain.DialogForT0cor;
+import org.jlab.dc_calibration.domain.EstimateT0correction;
 
 import org.jlab.dc_calibration.domain.OrderOfAction;
 import org.jlab.dc_calibration.domain.RunReconstructionCoatjava4;
@@ -94,6 +96,7 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
     // file to be read and analyzed
     private String fileName;
     // buttons to be implemented
+    JButton bT0Correction;
     JButton bFileChooser, bTestEvent, bReadRecDataIn, bReconstruction, bTimeToDistance, ccdbWriter, buttonClear;
     Dimension frameSize;
     OrderOfAction OA = null;
@@ -141,6 +144,7 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
 
     private void createButtons() {
         bFileChooser = new JButton("Choose File", createImageIcon("/images/Open16.gif"));
+        bT0Correction = new JButton();
         bTestEvent = new JButton();
         bReadRecDataIn = new JButton();
         bReconstruction = new JButton();
@@ -149,6 +153,7 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
         buttonClear = new JButton("Clear");
 
         bTestEvent.setText("<html>" + "&emsp; &emsp; TestButton " + "<br>" + " Needs to be removed" + "</html>");
+        bT0Correction.setText("<html>" + "Estimate T0s");
         bReadRecDataIn.setText("<html>" + "Run Decoder" + "</html>");
         bReconstruction.setText("<html>" + "Run Reconstruction" + "</html>");
         bTimeToDistance.setText("<html>" + "Run Time vs. Distance Fitter" + "</html>");
@@ -167,6 +172,7 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
         panelForVariousControls.setBorder(BorderFactory.createEtchedBorder());
         //addToOpenFilePanel(); //Moved below
         radioPanel = new JPanel(new GridLayout(0, 1));
+        addToT0CorButton();
         addToRecoButton();
         addToRadioPanel();
         addToOpenFilePanel();//add File-chooser, radio panel etc to the control panel
@@ -192,11 +198,20 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
     }
 
     private void addToOpenFilePanel() {  
-        //Pack bRec & radioPanel into subpanel1 & add to the main panel @ start
+        
+        //Pack bRec & radioPanel into subpanel1 //& add to the main panel @ start
         JPanel subControlPanel1 = new JPanel(new BorderLayout());
         subControlPanel1.add(bReconstruction, BorderLayout.LINE_START);
         subControlPanel1.add(radioPanel, BorderLayout.CENTER);
-        panelForVariousControls.add(subControlPanel1, BorderLayout.LINE_START);
+        //panelForVariousControls.add(subControlPanel1, BorderLayout.LINE_START);
+        
+        //Pack bT0Correction & subControlPanel1 into subpanel0 & add to the main panel @ start
+        JPanel subControlPanel0 = new JPanel(new BorderLayout());
+        subControlPanel0.add(bT0Correction, BorderLayout.LINE_START);
+        subControlPanel0.add(subControlPanel1, BorderLayout.CENTER);
+        panelForVariousControls.add(subControlPanel0, BorderLayout.LINE_START);        
+        
+        
      
         //Pack bFileChooser to another subpanel & add it to center of main Panel
         JPanel subControlPanel2 = new JPanel(new BorderLayout());
@@ -224,9 +239,25 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
         JLabel imgLabel = new JLabel(imageIcon);
         panelImg.add(imgLabel, BorderLayout.CENTER);
     }
+    
+    private void addToT0CorButton() {
+            bT0Correction.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent ae) {
 
+                String choice = ae.getActionCommand();
+                if (choice.equals("Quit")) {
+                    System.exit(0);
+                }   
+                else {
+                    createDialogForT0Correction();
+                }
+            }
+        });        
+    }
+    
     private void addToRecoButton() {
-            bReconstruction.addActionListener(new ActionListener() {
+        bReconstruction.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent ae) {
                 System.out.println("Reconstruction Button has been hit..");
@@ -235,14 +266,31 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
                 String choice = ae.getActionCommand();
                 if (choice.equals("Quit")) {
                     System.exit(0);
-                }   
-                //else if (choice.equals("Enter data")) {
+                } //else if (choice.equals("Enter data")) {
                 else {
                     createDialogForRecControls();
                 }
             }
         });
     }
+ 
+    private void createDialogForT0Correction() {
+        //DialogForRec dlg = new DialogForRec(frame);
+        DialogForT0cor dlg = new DialogForT0cor(frame);
+        String[] results = dlg.run();
+        ArrayList<String> fileArray = dlg.getFileArray();
+        if (results[0] != null) {
+            JOptionPane.showMessageDialog(frame,
+                    "Input file: " + results[0] + "\nOutput file: " + results[1]); 
+            
+                    System.out.println("Debug 0");
+            EstimateT0correction t0c = new EstimateT0correction(results, fileArray);
+            t0c.DrawPlots(); 
+            t0c.DrawPlotsForAllCables();
+            t0c.DrawPlotsForTMaxAllCables();
+            System.out.println("Finished drawing the T0 plots ..");
+        }
+    }    
     
     private void chooseInputFiles(JFileChooser iFC, ActionEvent evt) {
         iFC.setMultiSelectionEnabled(true);

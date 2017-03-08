@@ -53,5 +53,16 @@ public final class Constants {
         protected static final double tMaxSL[] = { 155.0, 165.0, 300.0, 320.0, 600.0, 650.0 };
         //protected static final double timeAxisMax[] = {300.0, 300.0, 650.0, 650.0, 650.0, 650.0};
         protected static final double timeAxisMax[] = {300.0, 300.0, 650.0, 650.0, 800.0, 850.0};
+        
+        protected static final int nCrates = 18;//Goes from 41 to 58 (one per chamber)
+        protected static final int nSlots = 20; //Total slots in each crate (only 14 used)
+        protected static final int nChannels = 96;//Total channels per Slot (one channel per wire) 
+        protected static final int nLayers0to35 = 36;//Layers in each sector (0th is closest to CLAS center), 6 in each SL
+        protected static final int nWires = 112; //Wires in each layer of a chamber
+        protected static final int nComponents = 112; //== nWires (translation table in CCDB uses components instead of wire)
+        protected static final int nRegions = 3;
+        protected static final int nCables = 84;
+        protected static final int nCables6 = 6; //# of Cables per DCRB or STB.
+        protected static final int nSlots7 = 7;  //# of STBs or occupied DCRB slots per SL.
 	private Constants() {}
 }

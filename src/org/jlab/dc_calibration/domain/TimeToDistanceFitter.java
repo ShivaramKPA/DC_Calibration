@@ -644,7 +644,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
         drawSectorWiseCanvasMaps();
         
         // lets add the canvas's to the pane and draw it.
-        /////////////addToPane();  //Temprarily disabled 
+       addToPane();  //Temprarily disabled 
 
         // this is temp for testHist
         EmbeddedCanvas test = new EmbeddedCanvas();
@@ -712,6 +712,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
                     
                     canvasPlace = 2*j + 1;
                     sectorsMapRes.get(i).cd(canvasPlace);  
+                    sectorsMapRes.get(i).getPad(canvasPlace).getAxisZ().setLog(true);
                     sectorsMapRes.get(i).draw(h2timeResVsTrkDoca.get(new Coordinate(i, j)));                   
                     sectorsMapRes.get(i).getPad(canvasPlace).setTitle(Title);
                     sectorsMapRes.get(i).setPadTitlesX("|trkDoca| (cm)");
@@ -889,13 +890,17 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 }
     
     protected void addToPane() {
+/*
         dcTabbedPane.addCanvasToPane("Sector 1", sector1);
         dcTabbedPane.addCanvasToPane("Sector 2", sector2);
         dcTabbedPane.addCanvasToPane("Sector 3", sector3);
         dcTabbedPane.addCanvasToPane("Sector 4", sector4);
         dcTabbedPane.addCanvasToPane("Sector 5", sector5);
         dcTabbedPane.addCanvasToPane("Sector 6", sector6);
-
+*/
+        for (int i = iSecMin; i < iSecMax; i++) { 
+            dcTabbedPane.addCanvasToPane("Sector " + (i+1), sectorsMap1.get(i));
+        }
         dcTabbedPane.showFrame();
 
     }
@@ -917,7 +922,9 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
         //Now get the previous fit parameters from CCDB 
         ReadT2DparsFromCCDB rdTable = new ReadT2DparsFromCCDB();
         double [][][] parsFromCCDB = new double [nSectors][nSL][nFitPars];//nFitPars = 9
+        double [][][] pars2write = new double [nSectors][nSL][nFitPars];//nFitPars = 9
         parsFromCCDB = rdTable.parsFromCCDB;
+        pars2write = rdTable.parsFromCCDB; //Initialize with the CCDB pars
         
         // initial guess of tMax for the 6 superlayers (cell sizes are different for each)
         // This is one of the free parameters (par[2], but fixed for now.)
@@ -936,9 +943,9 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
                 pHigh[2] = tMaxSL[j] * 1.6;
                 //for (int k = 0; k < nThBinsVz; k++) {
                 mapOfFitFunctions.put(new Coordinate(i, j),
-                        //new DCFitFunction(h2timeVtrkDocaVZ.get(new Coordinate(i, j, k)).getProfileX(), j, k, isLinearFit));
-                        //new DCFitFunction(h2timeVtrkDocaVZ, i, j, k, isLinearFit));
-                        new DCFitFunction(h2timeVtrkDocaVZ, i, j, isLinearFit));
+                //new DCFitFunction(h2timeVtrkDocaVZ.get(new Coordinate(i, j, k)).getProfileX(), j, k, isLinearFit));
+                //new DCFitFunction(h2timeVtrkDocaVZ, i, j, k, isLinearFit));
+                new DCFitFunction(h2timeVtrkDocaVZ, i, j, isLinearFit));
                 mapOfFitParameters.put(new Coordinate(i, j), new MnUserParameters());
                 for (int p = 0; p < nFreePars; p++) {
                     prevFitPar = prevFitPars[p]; //This is value set by hand (for now).
@@ -961,6 +968,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
                     MnMigrad migrad2 = new MnMigrad(mapOfFitFunctions.get(new Coordinate(i, j)), min.userState(), new MnStrategy(2));
                     min = migrad2.minimize();
                 }
+                
                 mapTmpUserFitParameters.put(new Coordinate(i, j), min.userParameters());
                 double[] fPars = new double[nFreePars];
                 double[] fErrs = new double[nFreePars];
@@ -968,15 +976,31 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
                     fPars[p] = mapTmpUserFitParameters.get(new Coordinate(i, j)).value(parName[p]);
                     fErrs[p] = mapTmpUserFitParameters.get(new Coordinate(i, j)).error(parName[p]);
                 }
+                
+                pars2write[i][j][0] = fPars[0]; pars2write[i][j][1] = fPars[1];
+                pars2write[i][j][2] = fPars[2]; pars2write[i][j][3] = fPars[3];
+                /*
                 if (!(file == null)) {
                     file.Write((i + 1) + "  " + (j + 1) + "  " + fPars[0] + "  "
                             + fPars[1] + "  " + fPars[2] + "  " + fPars[3]);
                 }
+                */
                 mapOfUserFitParameters.put(new Coordinate(i, j), fPars);
                 //} // end of nThBinsVz loop
             } // end of superlayer loop
         } // end of sector loop
 
+        for (int i = 0; i < nSectors; i++) { 
+            for (int j = 0; j < nSL; j++) {
+                if (!(file == null)) {
+                    file.Write((i + 1) + "  " + (j + 1) + "  " + pars2write[i][j][0] + "  "
+                    + pars2write[i][j][1] + "  " + pars2write[i][j][2] + "  " 
+                    + pars2write[i][j][3] + "  " + pars2write[i][j][4] + "  " 
+                    + pars2write[i][j][5] + "  " + pars2write[i][j][6] + "  "
+                    + pars2write[i][j][7] + "  " + pars2write[i][j][8]);
+                }        
+            }
+        }        
         if (!(file == null)) {
             file.Close();
         }

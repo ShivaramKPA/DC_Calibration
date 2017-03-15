@@ -64,5 +64,7 @@ public final class Constants {
         protected static final int nCables = 84;
         protected static final int nCables6 = 6; //# of Cables per DCRB or STB.
         protected static final int nSlots7 = 7;  //# of STBs or occupied DCRB slots per SL.
+        protected static final double [] tLow4TmaxFits = {180.0, 180.0, 180.0, 280.0, 480.0, 480.0};
+        protected static final double [] tHigh = {380.0, 380.0, 680.0, 780.0, 1080.0, 1080.0};
 	private Constants() {}
 }

@@ -644,7 +644,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
         drawSectorWiseCanvasMaps();
         
         // lets add the canvas's to the pane and draw it.
-       addToPane();  //Temprarily disabled 
+       //addToPane();  //Temprarily disabled 
 
         // this is temp for testHist
         EmbeddedCanvas test = new EmbeddedCanvas();

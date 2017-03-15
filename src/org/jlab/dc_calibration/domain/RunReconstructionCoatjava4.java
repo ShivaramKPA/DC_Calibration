@@ -84,6 +84,7 @@ public class RunReconstructionCoatjava4 {
         String runNum = fName.substring(41, 47);
         //outputFile = "src/files/kpp_000806_Iter" + results[1] + ".hipo";
         outputFile = "src/files/kpp_"+ runNum + "_Iter" + results[1] + ".hipo";
+        System.out.println("The output hipo file to be produced is: \n\t\t" + outputFile);
         writer.open(outputFile);
         long t1 = 0;
         while (reader.hasEvent()) {
@@ -101,7 +102,7 @@ public class RunReconstructionCoatjava4 {
             en2.processDataEvent(event);
             //System.out.println("  EVENT "+counter);
             //if (counter > 50000) {  break;   }
-            if(counter%100==0)
+            if(counter%5==0) //%100==0)
                 System.out.println("run " + counter + " events");
             writer.writeEvent(event);
         }

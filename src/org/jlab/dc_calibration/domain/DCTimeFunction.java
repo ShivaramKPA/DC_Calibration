@@ -113,7 +113,7 @@ public class DCTimeFunction {
                 
 		// //where x is trkdoca
 		double deltatime_beta = (Math.sqrt(x * x + Math.pow(distbeta * Math.pow(beta, 2), 2)) - x) / v0Par;
-		calcTime = calcTime + deltatime_beta;
+		calcTime = calcTime + deltatime_bfield + deltatime_beta;
 
 		return calcTime;
 	}

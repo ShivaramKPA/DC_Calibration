@@ -12,6 +12,8 @@
  */
 package org.jlab.dc_calibration.domain;
 
+import java.awt.Dimension;
+import java.awt.Toolkit;
 import static org.jlab.dc_calibration.domain.Constants.nHists;
 import static org.jlab.dc_calibration.domain.Constants.nLayer;
 import static org.jlab.dc_calibration.domain.Constants.nSL;
@@ -40,6 +42,7 @@ import java.util.logging.Logger;
 
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
+import javax.swing.JTabbedPane;
 
 import org.freehep.math.minuit.FunctionMinimum;
 import org.freehep.math.minuit.MnMigrad;
@@ -138,7 +141,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
     private Map<Coordinate, DCFitDrawer> mapOfFitLinesOld = new HashMap<Coordinate, DCFitDrawer>();
     private Map<Coordinate, DCFitDrawerForXDoca> mapOfFitLinesXOld = new HashMap<Coordinate, DCFitDrawerForXDoca>();
 
-    //private H1F timeRes;
+    private H1F h1bField;
     private H2F testHist;//, timeResVsTrkDoca;
     private Map<Coordinate, H1F> h1timeRes = new HashMap<Coordinate, H1F>();
     private Map<Coordinate, H2F> h2timeResVsTrkDoca = new HashMap<Coordinate, H2F>();
@@ -180,6 +183,9 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
     }
 
     private void createHists() {
+        h1bField = new H1F("Bfield",150,0.0,1.5);
+        h1bField.setTitle("B field");
+        h1bField.setLineColor(2);
         testHist = new H2F("A test of superlayer6 at thetabin6", 200, 0.0, 1.0, 150, 0.0, 200.0);
         TStyle.createAttributes();
         String hNm = "";
@@ -397,7 +403,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
         }
     }
     
-    private void createCanvas() {
+    private void createCanvas() { //No more used ??
 
         sector1 = new EmbeddedCanvas();
         sector2 = new EmbeddedCanvas();
@@ -470,40 +476,40 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
                 reader.open();
          */
         //readerH.open("src/files/DCRBREC.hipo");
-        //readerH.open("src/files/pythia1234.hipo");
-	for (String str : fileArray) {
+
+        for (String str : fileArray) { //Now reading multiple hipo files.
             System.out.println("Ready to Open & read " + str);
             readerH.open(str);
-	}
-                
-        while (readerH.hasEvent()) {// && icounter < 100
 
-            icounter++;
-            if (icounter % 2000 == 0) {
-                System.out.println("Processed " + icounter + " events.");
-            }
-            //EvioDataEvent event = reader.getNextEvent();
-            DataEvent event = readerH.getNextEvent();
-            /*  //got 'bank not found' message for each event.
+            while (readerH.hasEvent()) {// && icounter < 100
+
+                icounter++;
+                if (icounter % 2000 == 0) {
+                    System.out.println("Processed " + icounter + " events.");
+                }
+                //EvioDataEvent event = reader.getNextEvent();
+                DataEvent event = readerH.getNextEvent();
+                /*  //got 'bank not found' message for each event.
 			ProcessTBSegmentTrajectory tbSegmentTrajectory = new ProcessTBSegmentTrajectory(event);
 			if (tbSegmentTrajectory.getNsegs() > 0) {
 				counter++;
 			}
-             */
-            if (event.hasBank("TimeBasedTrkg::TBSegmentTrajectory")) {
-                counter++;
-            }
+                 */
+                if (event.hasBank("TimeBasedTrkg::TBSegmentTrajectory")) {
+                    counter++;
+                }
 
-            if (event.hasBank("TimeBasedTrkg::TBHits") && event.hasBank("TimeBasedTrkg::TBSegments")) {// && event.hasBank("TimeBasedTrkg::TBSegmentTrajectory") &&
-                // event.hasBank("TimeBasedTrkg::TBTracks")
-                ProcessTBTracks tbTracks = new ProcessTBTracks(event);
-                if (tbTracks.getNTrks() > 0) {
-                    processTBhits(event);
-                    processTBSegments(event);
+                if (event.hasBank("TimeBasedTrkg::TBHits") && event.hasBank("TimeBasedTrkg::TBSegments")) {// && event.hasBank("TimeBasedTrkg::TBSegmentTrajectory") &&
+                    // event.hasBank("TimeBasedTrkg::TBTracks")
+                    ProcessTBTracks tbTracks = new ProcessTBTracks(event);
+                    if (tbTracks.getNTrks() > 0) {
+                        processTBhits(event);
+                        processTBSegments(event);
+                    }
+
                 }
 
             }
-
         }
         System.out.println(
                 "processed " + counter + " Events with TimeBasedTrkg::TBSegmentTrajectory entries from a total of " + icounter + " events");
@@ -512,6 +518,8 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 
     //private void processTBhits(EvioDataEvent event) {
     private void processTBhits(DataEvent event) {
+        double bFieldVal = 0.0;
+        int sector = -1, superlayer = -1;
         layerMapTBHits = new HashMap<Integer, Integer>();
         wireMapTBHits = new HashMap<Integer, Integer>();
         timeMapTBHits = new HashMap<Integer, Double>();
@@ -528,7 +536,12 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
             //BMapTBHits.put(bnkHits.getInt("id", j), bnkHits.getDouble("B", j));
             trkDocaMapTBHits.put(bnkHits.getInt("id", j), (double) bnkHits.getFloat("trkDoca", j));
             timeResMapTBHits.put(bnkHits.getInt("id", j), (double) bnkHits.getFloat("timeResidual", j));
-            BMapTBHits.put(bnkHits.getInt("id", j), (double) bnkHits.getFloat("B", j));
+            bFieldVal =  (double) bnkHits.getFloat("B", j);
+            sector = bnkHits.getInt("sector", j);
+            superlayer = bnkHits.getInt("superlayer", j);
+            BMapTBHits.put(bnkHits.getInt("id", j), bFieldVal);
+            if(superlayer==3 || superlayer==4) h1bField.fill(bFieldVal); //for a quick look
+            //System.out.println("S = " + sector + "superlayer = " + superlayer + " B = " + bFieldVal);
             //System.out.println("B = " + BMapTBHits.get(j));
             int docaBin = (int) (((double) bnkHits.getFloat("trkDoca", j) - (-0.8)) / 0.2);
             if (bnkHits.getInt("sector", j) == 1 && (docaBin > -1 && docaBin < 8)) {
@@ -619,6 +632,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
     protected void drawHistograms() {
         //createCanvas();
         createCanvasMaps();
+        drawQuickTestPlots();
         //for (int i = 0; i < nSectors; i++) {
         for (int i = iSecMin; i < iSecMax; i++) { //2/15/17: Looking only at the Sector2 (KPP) data (not to waste time in empty hists)
             for (int j = 0; j < nSL; j++) {
@@ -642,21 +656,29 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
         createFitLines();
         //drawSectorWiseCanvases();
         drawSectorWiseCanvasMaps();
+        DrawInTabbedPanesOfSecSLTh();
         
         // lets add the canvas's to the pane and draw it.
        //addToPane();  //Temprarily disabled 
+       
 
-        // this is temp for testHist
-        EmbeddedCanvas test = new EmbeddedCanvas();
-        test.cd(0);
-        test.draw(testHist);
-        test.save("src/images/test.png");
         
         System.out.println("====================================");
         System.out.println("Done with the fitting & drawing ...`");
         System.out.println("====================================");
     }
 
+    protected void drawQuickTestPlots() {
+        int nEntries = h1bField.getEntries();//.getDataSize(1);
+        System.out.println("# of entries in h1bField = " + nEntries);
+        // this is temp for testHist
+        EmbeddedCanvas canv = new EmbeddedCanvas(); canv.setSize(500, 500); 
+        canv.cd(0);
+        //test.draw(h2timeVtrkDocaVZ.get(new Coordinate(1,2,3)));
+        canv.draw(h1bField);
+        canv.save("src/images/test_bField.png");
+    }
+    
     protected void drawSectorWiseCanvasMaps() {
         int canvasPlace = 0;
         String Title;
@@ -728,166 +750,8 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
             sectorsMapRes.get(i).save("src/images/sector"+(i+1)+"Residuals.png");
         }
     }
-    protected void drawSectorWiseCanvases() {
-        int canvasPlace = 0;
-        String Title;
-        for (int j = 0; j < nSL; j++) {
-            for (int k = 0; k < nThBinsVz; k++) {
-                sector1.cd(canvasPlace);
-                sector2.cd(canvasPlace);
-                sector3.cd(canvasPlace);
-                sector4.cd(canvasPlace);
-                sector5.cd(canvasPlace);
-                sector6.cd(canvasPlace);
-
-                sector1.draw(h2timeVtrkDocaVZ.get(new Coordinate(0, j, k)));
-                sector2.draw(h2timeVtrkDocaVZ.get(new Coordinate(1, j, k)));                
-                sector3.draw(h2timeVtrkDocaVZ.get(new Coordinate(2, j, k)));
-                sector4.draw(h2timeVtrkDocaVZ.get(new Coordinate(3, j, k)));
-                sector5.draw(h2timeVtrkDocaVZ.get(new Coordinate(4, j, k)));
-                sector6.draw(h2timeVtrkDocaVZ.get(new Coordinate(5, j, k)));
-                
-                sector1.draw(mapOfFitLinesOld.get(new Coordinate(0, j, k)), "same");
-                sector2.draw(mapOfFitLinesOld.get(new Coordinate(1, j, k)), "same");
-                sector3.draw(mapOfFitLinesOld.get(new Coordinate(2, j, k)), "same");
-                sector4.draw(mapOfFitLinesOld.get(new Coordinate(3, j, k)), "same");
-                sector5.draw(mapOfFitLinesOld.get(new Coordinate(4, j, k)), "same");
-                sector6.draw(mapOfFitLinesOld.get(new Coordinate(5, j, k)), "same");                
-                
-                sector1.draw(mapOfFitLines.get(new Coordinate(0, j, k)), "same");
-                sector2.draw(mapOfFitLines.get(new Coordinate(1, j, k)), "same");
-                sector3.draw(mapOfFitLines.get(new Coordinate(2, j, k)), "same");
-                sector4.draw(mapOfFitLines.get(new Coordinate(3, j, k)), "same");
-                sector5.draw(mapOfFitLines.get(new Coordinate(4, j, k)), "same");
-                sector6.draw(mapOfFitLines.get(new Coordinate(5, j, k)), "same");
-
-                Title = "Sec=1, SL=" + (j + 1) + " theta=(" + thEdgeVzL[k] + "," + thEdgeVzH[k] + ")";
-                sector1.getPad(j * nThBinsVz + k).setTitle(Title);
-                Title = "Sec=2, SL=" + (j + 1) + " theta=(" + thEdgeVzL[k] + "," + thEdgeVzH[k] + ")";
-                sector2.getPad(j * nThBinsVz + k).setTitle(Title);
-                Title = "Sec=3, SL=" + (j + 1) + " theta=(" + thEdgeVzL[k] + "," + thEdgeVzH[k] + ")";
-                sector3.getPad(j * nThBinsVz + k).setTitle(Title);
-                Title = "Sec=4, SL=" + (j + 1) + " theta=(" + thEdgeVzL[k] + "," + thEdgeVzH[k] + ")";
-                sector4.getPad(j * nThBinsVz + k).setTitle(Title);
-                Title = "Sec=5, SL=" + (j + 1) + " theta=(" + thEdgeVzL[k] + "," + thEdgeVzH[k] + ")";
-                sector5.getPad(j * nThBinsVz + k).setTitle(Title);
-                Title = "Sec=6, SL=" + (j + 1) + " theta=(" + thEdgeVzL[k] + "," + thEdgeVzH[k] + ")";
-                sector6.getPad(j * nThBinsVz + k).setTitle(Title);
-
-                sector1.setPadTitlesX("trkDoca/docaMax");
-                sector1.setPadTitlesY("time (ns)");
-                sector2.setPadTitlesX("trkDoca/docaMax");
-                sector2.setPadTitlesY("time (ns)");
-                sector3.setPadTitlesX("trkDoca/docaMax");
-                sector3.setPadTitlesY("time (ns)");
-                sector4.setPadTitlesX("trkDoca/docaMax");
-                sector4.setPadTitlesY("time (ns)");
-                sector5.setPadTitlesX("trkDoca/docaMax");
-                sector5.setPadTitlesY("time (ns)");
-                sector6.setPadTitlesX("trkDoca/docaMax");
-                sector6.setPadTitlesY("time (ns)");
-
-                
-                sector1n.cd(canvasPlace);
-                sector2n.cd(canvasPlace);
-                sector3n.cd(canvasPlace);
-                sector4n.cd(canvasPlace);
-                sector5n.cd(canvasPlace);
-                sector6n.cd(canvasPlace);
-
-                sector1n.draw(h2timeVtrkDoca.get(new Coordinate(0, j, k)));
-                sector2n.draw(h2timeVtrkDoca.get(new Coordinate(1, j, k)));                
-                sector3n.draw(h2timeVtrkDoca.get(new Coordinate(2, j, k)));
-                sector4n.draw(h2timeVtrkDoca.get(new Coordinate(3, j, k)));
-                sector5n.draw(h2timeVtrkDoca.get(new Coordinate(4, j, k)));
-                sector6n.draw(h2timeVtrkDoca.get(new Coordinate(5, j, k)));
-                
-                sector1n.draw(mapOfFitLinesXOld.get(new Coordinate(0, j, k)), "same");
-                sector2n.draw(mapOfFitLinesXOld.get(new Coordinate(1, j, k)), "same");
-                sector3n.draw(mapOfFitLinesXOld.get(new Coordinate(2, j, k)), "same");
-                sector4n.draw(mapOfFitLinesXOld.get(new Coordinate(3, j, k)), "same");
-                sector5n.draw(mapOfFitLinesXOld.get(new Coordinate(4, j, k)), "same");
-                sector6n.draw(mapOfFitLinesXOld.get(new Coordinate(5, j, k)), "same");                
-                
-                sector1n.draw(mapOfFitLinesX.get(new Coordinate(0, j, k)), "same");
-                sector2n.draw(mapOfFitLinesX.get(new Coordinate(1, j, k)), "same");
-                sector3n.draw(mapOfFitLinesX.get(new Coordinate(2, j, k)), "same");
-                sector4n.draw(mapOfFitLinesX.get(new Coordinate(3, j, k)), "same");
-                sector5n.draw(mapOfFitLinesX.get(new Coordinate(4, j, k)), "same");
-                sector6n.draw(mapOfFitLinesX.get(new Coordinate(5, j, k)), "same");
-
-                Title = "Sec=1, SL=" + (j + 1) + " theta=(" + thEdgeVzL[k] + "," + thEdgeVzH[k] + ")";
-                sector1n.getPad(j * nThBinsVz + k).setTitle(Title);
-                Title = "Sec=2, SL=" + (j + 1) + " theta=(" + thEdgeVzL[k] + "," + thEdgeVzH[k] + ")";
-                sector2n.getPad(j * nThBinsVz + k).setTitle(Title);
-                Title = "Sec=3, SL=" + (j + 1) + " theta=(" + thEdgeVzL[k] + "," + thEdgeVzH[k] + ")";
-                sector3n.getPad(j * nThBinsVz + k).setTitle(Title);
-                Title = "Sec=4, SL=" + (j + 1) + " theta=(" + thEdgeVzL[k] + "," + thEdgeVzH[k] + ")";
-                sector4n.getPad(j * nThBinsVz + k).setTitle(Title);
-                Title = "Sec=5, SL=" + (j + 1) + " theta=(" + thEdgeVzL[k] + "," + thEdgeVzH[k] + ")";
-                sector5n.getPad(j * nThBinsVz + k).setTitle(Title);
-                Title = "Sec=6, SL=" + (j + 1) + " theta=(" + thEdgeVzL[k] + "," + thEdgeVzH[k] + ")";
-                sector6n.getPad(j * nThBinsVz + k).setTitle(Title);
-
-                sector1n.setPadTitlesX("trkDoca");
-                sector1n.setPadTitlesY("time (ns)");
-                sector2n.setPadTitlesX("trkDoca");
-                sector2n.setPadTitlesY("time (ns)");
-                sector3n.setPadTitlesX("trkDoca");
-                sector3n.setPadTitlesY("time (ns)");
-                sector4n.setPadTitlesX("trkDoca");
-                sector4n.setPadTitlesY("time (ns)");
-                sector5n.setPadTitlesX("trkDoca");
-                sector5n.setPadTitlesY("time (ns)");
-                sector6n.setPadTitlesX("trkDoca");
-                sector6n.setPadTitlesY("time (ns)");
-                
-                
-                sector1Profiles.cd(canvasPlace);
-                sector2Profiles.cd(canvasPlace);
-                sector3Profiles.cd(canvasPlace);
-                sector4Profiles.cd(canvasPlace);
-                sector5Profiles.cd(canvasPlace);
-                sector6Profiles.cd(canvasPlace);
-
-                sector1Profiles.draw(h2timeVtrkDocaVZ.get(new Coordinate(0, j, k)).getProfileX());
-                sector1Profiles.draw(mapOfFitLines.get(new Coordinate(0, j, k)), "same");
-                sector2Profiles.draw(h2timeVtrkDocaVZ.get(new Coordinate(1, j, k)).getProfileX());
-                sector2Profiles.draw(mapOfFitLines.get(new Coordinate(1, j, k)), "same");
-                sector3Profiles.draw(h2timeVtrkDocaVZ.get(new Coordinate(2, j, k)).getProfileX());
-                sector3Profiles.draw(mapOfFitLines.get(new Coordinate(2, j, k)), "same");
-                sector4Profiles.draw(h2timeVtrkDocaVZ.get(new Coordinate(3, j, k)).getProfileX());
-                sector4Profiles.draw(mapOfFitLines.get(new Coordinate(3, j, k)), "same");
-                sector5Profiles.draw(h2timeVtrkDocaVZ.get(new Coordinate(4, j, k)).getProfileX());
-                sector5Profiles.draw(mapOfFitLines.get(new Coordinate(5, j, k)), "same");
-                sector6Profiles.draw(h2timeVtrkDocaVZ.get(new Coordinate(5, j, k)).getProfileX());
-                sector6Profiles.draw(mapOfFitLines.get(new Coordinate(5, j, k)), "same");
-
-                canvasPlace++;
-
-            }
-        }
-        sector1.save("src/images/sector1.png");
-        sector2.save("src/images/sector2.png");
-        sector3.save("src/images/sector3.png");
-        sector4.save("src/images/sector4.png");
-        sector5.save("src/images/sector5.png");
-        sector6.save("src/images/sector6.png");
-
-        sector1n.save("src/images/sector1n.png");
-        sector2n.save("src/images/sector2n.png");
-        sector3n.save("src/images/sector3n.png");
-        sector4n.save("src/images/sector4n.png");
-        sector5n.save("src/images/sector5n.png");
-        sector6n.save("src/images/sector6n.png");
-
-        sector1Profiles.save("src/images/sector1Profiles.png");
-        sector2Profiles.save("src/images/sector2Profiles.png");
-        sector3Profiles.save("src/images/sector3Profiles.png");
-        sector4Profiles.save("src/images/sector4Profiles.png");
-        sector5Profiles.save("src/images/sector5Profiles.png");
-        sector6Profiles.save("src/images/sector6Profiles.png");
-}
+    
+    
     
     protected void addToPane() {
 /*
@@ -905,11 +769,44 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 
     }
 
+    
+    protected void DrawInTabbedPanesOfSecSLTh() {
+        String Title = "";
+        JFrame frame = new JFrame();
+        JTabbedPane sectorPanes = new JTabbedPane();
+        for (int i = iSecMin; i < iSecMax; i++) { 
+            JTabbedPane anglePanes = new JTabbedPane();
+            for (int k = 0; k < nThBinsVz; k++) { 
+                EmbeddedCanvas canvas = new EmbeddedCanvas ();
+                canvas.setSize(3 * 400, 2* 400); 
+                canvas.divide(3,2); 
+                for (int j = 0; j < nSL; j++) {  
+                    canvas.cd(j); 
+                    Title = "Sec="+ (i+1) + " SL=" + (j + 1) + " theta=(" + thEdgeVzL[k] + "," + thEdgeVzH[k] + ")";
+                    canvas.draw(h2timeVtrkDoca.get(new Coordinate(i, j, k)));
+                    canvas.draw(mapOfFitLinesXOld.get(new Coordinate(i, j, k)), "same");
+                    canvas.draw(mapOfFitLinesX.get(new Coordinate(i, j, k)), "same");                    
+                    canvas.getPad(j).setTitle(Title);
+                    canvas.setPadTitlesX("trkDoca");
+                    canvas.setPadTitlesY("time (ns)"); 
+                }
+                anglePanes.add(canvas,"ThBin"+(k+1));
+            }
+            sectorPanes.add(anglePanes,"Sector "+ (i+1));
+        } 
+        Dimension screensize = Toolkit.getDefaultToolkit().getScreenSize();
+        frame.setSize((int)(screensize.getWidth()*.9),(int)(screensize.getHeight()*.9));
+        frame.setLocationRelativeTo(null);
+        frame.add(sectorPanes);
+        frame.setVisible(true);        
+    }
+    
+    
     public void runFitter() throws IOException {
 
         boolean append_to_file = false;
         FileOutputWriter file = null;
-
+        String str = " ";
         try {
             file = new FileOutputWriter("src/files/fitParameters.txt", append_to_file);
             file.Write("Sec  SL  v0  deltanm  tMax  distbeta  delta_bfield_coefficient  b1  b2  b3  b4");
@@ -993,11 +890,17 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
         for (int i = 0; i < nSectors; i++) { 
             for (int j = 0; j < nSL; j++) {
                 if (!(file == null)) {
+                    /*
                     file.Write((i + 1) + "  " + (j + 1) + "  " + pars2write[i][j][0] + "  "
                     + pars2write[i][j][1] + "  " + pars2write[i][j][2] + "  " 
                     + pars2write[i][j][3] + "  " + pars2write[i][j][4] + "  " 
                     + pars2write[i][j][5] + "  " + pars2write[i][j][6] + "  "
-                    + pars2write[i][j][7] + "  " + pars2write[i][j][8]);
+                    + pars2write[i][j][7] + "  " + pars2write[i][j][8]); */
+                    str = String.format("%d %d %5.4f %5.4f %5.4f %5.4f %5.4f %5.4f %5.4f %5.4f %5.4f",
+                                i+1,j+1,pars2write[i][j][0],pars2write[i][j][1],pars2write[i][j][2],
+                                pars2write[i][j][3],pars2write[i][j][4],pars2write[i][j][5],
+                                pars2write[i][j][6],pars2write[i][j][7],pars2write[i][j][8]);
+                    file.Write(str); 
                 }        
             }
         }        
@@ -1010,6 +913,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 
         boolean append_to_file = false;
         FileOutputWriter file = null;
+        String str = "";
 
         try {
             file = new FileOutputWriter("src/files/fitParametersForEachThBin.txt", append_to_file);
@@ -1062,9 +966,13 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
                         fErrs[p] = mapTmpUserFitParameters.get(new Coordinate(i, j, k)).error(parName[p]);
                     }
 
+                    //Writing fit parameters to an output file
                     if (!(file == null)) {
-                        file.Write((i + 1) + "  " + (j + 1) + "  " + (k + 1) + "  " + fPars[0]
-                                + "  " + fPars[1] + "  " + fPars[2] + "  " + fPars[3]);
+                        /*file.Write((i + 1) + "  " + (j + 1) + "  " + (k + 1) + "  " + fPars[0]
+                                + "  " + fPars[1] + "  " + fPars[2] + "  " + fPars[3]); */                            
+                        str = String.format("%d %d %d %5.4f %5.4f %5.4f %5.4f",
+                                        i+1,j+1,k+1,fPars[0],fPars[1],fPars[2],fPars[3]);
+                        file.Write(str);                         
                     }
                     mapOfUserFitParametersOld.put(new Coordinate(i, j, k), fPars);
                 } // end of nThBinsVz loop
@@ -1086,7 +994,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
                     String title = "timeVsNormDoca Sec=" + (i+1) + " SL=" + (j+1) + " Th=" + k;
                     double maxFitValue = h2timeVtrkDocaVZ.get(new Coordinate(i, j, k)).getDataX(getMaximumFitValue(i, j, k));
                     mapOfFitLines.put(new Coordinate(i, j, k), new DCFitDrawer(title, 0.0, 1.0, j, k, isLinearFit));
-                    mapOfFitLines.get(new Coordinate(i, j, k)).setLineColor(2);
+                    mapOfFitLines.get(new Coordinate(i, j, k)).setLineColor(4);//(2);
                     mapOfFitLines.get(new Coordinate(i, j, k)).setLineWidth(3);
                     mapOfFitLines.get(new Coordinate(i, j, k)).setLineStyle(4);
                     //mapOfFitLines.get(new Coordinate(i, j, k)).setParameters(mapOfUserFitParameters.get(new Coordinate(i, j, k)));
@@ -1102,7 +1010,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 
                     title = "timeVsTrkDoca Sec=" + (i+1) + " SL=" + (j+1) + " Th=" + k;                    
                     mapOfFitLinesX.put(new Coordinate(i, j, k), new DCFitDrawerForXDoca(title, 0.0, 1.1*dMax, j, k, isLinearFit));
-                    mapOfFitLinesX.get(new Coordinate(i, j, k)).setLineColor(2);
+                    mapOfFitLinesX.get(new Coordinate(i, j, k)).setLineColor(4);//(2);
                     mapOfFitLinesX.get(new Coordinate(i, j, k)).setLineWidth(3);
                     mapOfFitLinesX.get(new Coordinate(i, j, k)).setLineStyle(4);
                     //mapOfFitLines.get(new Coordinate(i, j, k)).setParameters(mapOfUserFitParameters.get(new Coordinate(i, j, k)));

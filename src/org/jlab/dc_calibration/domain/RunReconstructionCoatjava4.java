@@ -46,15 +46,8 @@ public class RunReconstructionCoatjava4 {
         iDir = "/Users/kpadhikari/Desktop/BigFls/CLAS12/KPP/";
         //String inputFile = "/Users/ziegler/Workdir/Distribution/coatjava-4a.0.0/gemc_generated.hipo";
         String inputFile = "C:\\Users\\KPAdhikari\\Desktop\\BigFls\\CLAS12\\FTonReal_3a.0.2_kpp_fulltorus_electron_fixed.hipo";
-        //String inputFile = "C:\\Users\\KPAdhikari\\Desktop\\BigFls\\CLAS12\\CalChal\\GemcOp\\out_1234.hipo";
-        inputFile = "C:\\Users\\KPAdhikari\\Desktop\\BigFls\\CLAS12\\CalChal\\Cosmics\\clas_000708_090_decodedHallB.hipo";
-        inputFile = "C:\\Users\\KPAdhikari\\Desktop\\BigFls\\CLAS12\\CalChal\\Cosmics\\kpp_Decoded_000758_Files0to2Comb.hipo";
-        //inputFile = "C:\\Users\\KPAdhikari\\Desktop\\BigFls\\CLAS12\\CalChal\\Cosmics\\kpp_Decoded_000761_Files0to2Comb.hipo";
-        //String inputFile = args[0];
-        //String outputFile = args[1];
         inputFile = iDir + "kpp_Decoded_000809_Files1to6Comb.hipo";
-        inputFile = iDir + "kpp_Decoded_000805_Files0to1Comb.hipo";
-        inputFile = iDir + "kpp_Decoded_000806_FilesAllComb.hipo";
+ 
         inputFile = results[0];
 
         System.err.println(" \n[PROCESSING FILE] : " + inputFile);
@@ -73,17 +66,12 @@ public class RunReconstructionCoatjava4 {
         HipoDataSync writer = new HipoDataSync();
         //Writer
         String outputFile = "src/files/DCRBREC.hipo";
-        //String outputFile = "src/files/pythia1234.hipo";
-        outputFile = "src/files/cosmic_000708_090.hipo";
-        outputFile = "src/files/kpp_000758_0to2.hipo";
-        outputFile = "src/files/kpp_000809_1to6i2.hipo";
-        //outputFile = "src/files/kpp_000761_0to2.hipo";
-        outputFile = "src/files/kpp_000805_0to1i0.hipo";
-        outputFile = "src/files/kpp_000806_0Alli0.hipo";        
+        
         String fName = results[0];
         String runNum = fName.substring(41, 47);
         //outputFile = "src/files/kpp_000806_Iter" + results[1] + ".hipo";
         outputFile = "src/files/kpp_"+ runNum + "_Iter" + results[1] + ".hipo";
+        outputFile = "src/files/kpp_Cooked_Iter" + results[1] + ".hipo";
         System.out.println("The output hipo file to be produced is: \n\t\t" + outputFile);
         writer.open(outputFile);
         long t1 = 0;
@@ -102,7 +90,7 @@ public class RunReconstructionCoatjava4 {
             en2.processDataEvent(event);
             //System.out.println("  EVENT "+counter);
             //if (counter > 50000) {  break;   }
-            if(counter%5==0) //%100==0)
+            if(counter%100==0) //%100==0)
                 System.out.println("run " + counter + " events");
             writer.writeEvent(event);
         }

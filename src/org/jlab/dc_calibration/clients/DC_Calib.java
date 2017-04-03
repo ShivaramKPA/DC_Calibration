@@ -29,8 +29,10 @@ import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.io.PrintStream;
@@ -60,6 +62,7 @@ import javax.swing.text.JTextComponent;
 import javax.swing.text.TextAction;
 import org.jlab.dc_calibration.domain.DialogForRec;
 import org.jlab.dc_calibration.domain.DialogForT0cor;
+import org.jlab.dc_calibration.domain.DialogFor_tvsxCCDBwriter;
 import org.jlab.dc_calibration.domain.EstimateT0correction;
 
 import org.jlab.dc_calibration.domain.OrderOfAction;
@@ -97,7 +100,7 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
     private String fileName;
     // buttons to be implemented
     JButton bT0Correction;
-    JButton bFileChooser, bTestEvent, bReadRecDataIn, bReconstruction, bTimeToDistance, ccdbWriter, buttonClear;
+    JButton bFileChooser, bTestEvent, bReadRecDataIn, bReconstruction, bTimeToDistance, bCCDBwriter, buttonClear;
     Dimension frameSize;
     OrderOfAction OA = null;
 
@@ -149,7 +152,7 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
         bReadRecDataIn = new JButton();
         bReconstruction = new JButton();
         bTimeToDistance = new JButton();
-        ccdbWriter = new JButton();
+        bCCDBwriter = new JButton();
         buttonClear = new JButton("Clear");
 
         bTestEvent.setText("<html>" + "&emsp; &emsp; TestButton " + "<br>" + " Needs to be removed" + "</html>");
@@ -157,7 +160,7 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
         bReadRecDataIn.setText("<html>" + "Run Decoder" + "</html>");
         bReconstruction.setText("<html>" + "Run Reconstruction" + "</html>");
         bTimeToDistance.setText("<html>" + "Run Time vs. Distance Fitter" + "</html>");
-        ccdbWriter.setText("<html>" + "Send Results to CCDB" + "</html>");
+        bCCDBwriter.setText("<html>" + "Load xvst pars to CCDB" + "</html>");
 
         //bReconstruction.setPreferredSize(new Dimension(frameSize.width / 3, frameSize.height / 3));
         bTimeToDistance.setPreferredSize(new Dimension(frameSize.width / 3, frameSize.height / 3));
@@ -176,7 +179,8 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
         addToRecoButton();
         addToRadioPanel();
         addToOpenFilePanel();//add File-chooser, radio panel etc to the control panel
-
+        addToCCDBwriterButton(); //CCDB writer for tvsx parameters
+        
         panelForWelcomeAndOpenFile = new JPanel(new BorderLayout());
         addToWelcomePanel();
 
@@ -217,6 +221,8 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
         JPanel subControlPanel2 = new JPanel(new BorderLayout());
         subControlPanel2.add(bFileChooser, BorderLayout.LINE_START);
         panelForVariousControls.add(subControlPanel2, BorderLayout.CENTER);
+        
+        panelForVariousControls.add(bCCDBwriter, BorderLayout.LINE_END);
     }
 
     private void addToWelcomePanel() {
@@ -255,6 +261,21 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
             }
         });        
     }
+    private void addToCCDBwriterButton() {
+            bCCDBwriter.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent ae) {
+
+                String choice = ae.getActionCommand();
+                if (choice.equals("Quit")) {
+                    System.exit(0);
+                } else {
+                    
+                    createDialogForTvsX_CCDBwriter();                    
+                }
+            }
+        });        
+    }
     
     private void addToRecoButton() {
         bReconstruction.addActionListener(new ActionListener() {
@@ -274,6 +295,48 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
         });
     }
  
+    private void createDialogForTvsX_CCDBwriter() {
+        DialogFor_tvsxCCDBwriter dlg = new DialogFor_tvsxCCDBwriter(frame);
+        String[] results = dlg.run();
+        ArrayList<String> fileArray = dlg.getFileArray();
+        if (results[0] != null) {
+            
+            String s = null;
+            String command = null;
+
+            try {
+                System.out.println("File to be uploaded: " + results[0]
+                        + "\nComments to be added: '" + results[1] + "'");
+                //Process p = Runtime.getRuntime().exec("pwd");
+                
+                command = String.format("./src/files/loadFitParsToCCDB.csh %s '%s'", results[0],results[1]);
+                System.out.println("The following command is being executed: \n " + command);
+                command = "./src/files/justEchoHello.sh";
+                Process p = Runtime.getRuntime().exec(command);
+                BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
+                BufferedReader stdError = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+
+                // read the output from the command
+                //System.out.println("Here is the standard output of the command:\n");
+                while ((s = stdInput.readLine()) != null) {
+                    System.out.println(s);
+                }
+
+                // read any errors from the attempted command
+                //System.out.println("Here is the standard error of the command (if any):\n");
+                while ((s = stdError.readLine()) != null) {
+                    System.out.println(s);
+                }
+
+                System.exit(0);
+            } catch (IOException e) {
+                System.out.println("exception happened - here's what I know: ");
+                e.printStackTrace();
+                System.exit(-1);
+            }
+        }
+    }
+    
     private void createDialogForT0Correction() {
         //DialogForRec dlg = new DialogForRec(frame);
         DialogForT0cor dlg = new DialogForT0cor(frame);
@@ -320,7 +383,7 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
         // buttonPanel.add(bReadRecDataIn);
         //buttonPanel.add(bReconstruction);
         buttonPanel.add(bTimeToDistance);
-        // buttonPanel.add(ccdbWriter);
+        //buttonPanel.add(bCCDBwriter);
         OrderOfAction(2); // this int in OrderOfAction is the number of buttons activated in this method
     }
 

@@ -60,26 +60,12 @@ public class DCFitFunction implements FCNBase {
         double chisq = 0;
         double thetaDeg = 0;
         GraphErrors profileX;
-        /*
-                thetaDeg = 0.5 * (thEdgeVzL[thetaBin] + thEdgeVzH[thetaBin]);
-		for (int i = 0; i < profileX.getDataSize(0); i++) {
 
-			double docaNorm = profileX.getDataX(i);
-			double measTime = profileX.getDataY(i);
-			double measTimeErr = profileX.getDataEY(i);
-			timeFunc = new DCTimeFunction(superlayer, thetaDeg, docaNorm, par);
-			double calcTime = isLinear ? timeFunc.linearFit() : timeFunc.nonLinearFit();
-
-			if (measTimeErr == measTimeErr && measTimeErr > 0.0 && docaNorm < 0.9) {
-				delta = (measTime - calcTime) / measTimeErr; // error weighted deviation
-				chisq += delta * delta;
-			}
-		}
-         */
         int discardThBins = 4;
         for (int th = 0 + discardThBins; th < nThBinsVz - discardThBins; th++) {
             //discard central bin (i.e. the bin around zero-degree) to avoid bad relolution events
-            //if(th == (nThBinsVz/2)) {continue;}
+            if(th == (nThBinsVz/2)) {continue;}
+            if(th == (nThBinsVz/2) - 1 || th == (nThBinsVz/2) + 1 ) {continue;}
             
             thetaDeg = 0.5 * (thEdgeVzL[th] + thEdgeVzH[th]);
             profileX = h2timeVtrkDoca.get(new Coordinate(sector, superlayer, th)).getProfileX();

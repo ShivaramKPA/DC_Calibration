@@ -1,14 +1,6 @@
-/*  +__^_________,_________,_____,________^-.-------------------,
- *  | |||||||||   `--------'     |          |                   O
- *  `+-------------USMC----------^----------|___________________|
- *    `\_,---------,---------,--------------'
- *      / X MK X /'|       /'
- *     / X MK X /  `\    /'
- *    / X MK X /`-------'
- *   / X MK X /
- *  / X MK X /
- * (________(                @author m.c.kunkel
- *  `------'					based of the KrishnaFcn.java
+/* 
+ * @author m.c.kunkel & kpadhikari
+ *  based of the KrishnaFcn.java
 */
 package org.jlab.dc_calibration.domain;
 

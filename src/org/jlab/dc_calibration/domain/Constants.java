@@ -7,7 +7,7 @@
  *    / X MK X /`-------'
  *   / X MK X /
  *  / X MK X /
- * (________(                @author m.c.kunkel
+ * (________(                @author m.c.kunkel, K. P. Adhikari
  *  `------'
 */
 package org.jlab.dc_calibration.domain;
@@ -31,6 +31,9 @@ public final class Constants {
         protected static final int nThBinsVz = 17; // [nThBinsVZ][2]
 	protected static final double[] thEdgeVzL = { -55, -45, -35, -25, -20, -15, -10, -6, -2, 2,  6, 10, 15, 20, 25, 35, 45};
 	protected static final double[] thEdgeVzH = { -45, -35, -25, -20, -15, -10, -6,  -2,  2, 6, 10, 15, 20, 25, 35, 45, 55};
+        protected static final int nThBinsVz2 = 9;
+	protected static final double[] thEdgeVzL2 = { -36, -26, -16, -8, -2, 6, 14, 24, 34};
+	protected static final double[] thEdgeVzH2 = { -34, -24, -14, -6,  2, 8, 16, 26, 36};
 
 	protected static final double[] wpdist = { 0.3861, 0.4042, 0.6219, 0.6586, 0.9351, 0.9780 };
 	protected static final int nSL = 6;

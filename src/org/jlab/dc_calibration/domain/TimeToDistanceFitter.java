@@ -1,5 +1,6 @@
-/*              @author m.c.kunkel
+/*              
  * 		@author KPAdhikari
+ *              @author m.c.kunkel
  */
 package org.jlab.dc_calibration.domain;
 
@@ -81,7 +82,9 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
     private Map<Coordinate, H1F> h1fitChisqProbSeg4Dar = new HashMap<Coordinate, H1F>();
     private Map<Coordinate, H2F> h2timeVtrkDoca = new HashMap<Coordinate, H2F>();
     private Map<Coordinate, H2F> h2timeVtrkDocaVZ = new HashMap<Coordinate, H2F>();
-
+    private Map<Coordinate, H2F> h2timeFitResVtrkDoca = new HashMap<Coordinate, H2F>();//time - fitLine
+    private Map<Coordinate, H1F> h1timeFitRes = new HashMap<Coordinate, H1F>();  //time - fitLine
+    
     private Map<Integer, Integer> layerMapTBHits;
     private Map<Integer, Integer> wireMapTBHits;
     private Map<Integer, Double> timeMapTBHits;
@@ -361,7 +364,20 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
                     hTtl = String.format("time vs. |Doca| (Sec=%d, SL=%d, th(%2.1f,%2.1f))", i, j + 1, thEdgeVzL[k], thEdgeVzH[k]);
                     h2timeVtrkDoca.get(new Coordinate(i, j, k)).setTitle(hTtl);
                     h2timeVtrkDoca.get(new Coordinate(i, j, k)).setTitleX("|Doca| (cm)");
-                    h2timeVtrkDoca.get(new Coordinate(i, j, k)).setTitleY("Time (ns)");                    
+                    h2timeVtrkDoca.get(new Coordinate(i, j, k)).setTitleY("Time (ns)");  
+                    hNm = String.format("Sector %d timeFitResVtrkDocaS%dTh%02d", i, j, k);
+                    h2timeFitResVtrkDoca.put(new Coordinate(i, j, k), new H2F(hNm, 200, 0.0, 1.2*dMax, 150, -timeAxisMax[j]/2, timeAxisMax[j]/2));
+                    hTtl = String.format("time - fit vs. |Doca| (Sec=%d, SL=%d, th(%2.1f,%2.1f))", i, j + 1, thEdgeVzL[k], thEdgeVzH[k]);
+                    h2timeFitResVtrkDoca.get(new Coordinate(i, j, k)).setTitle(hTtl);
+                    h2timeFitResVtrkDoca.get(new Coordinate(i, j, k)).setTitleX("|Doca| (cm)");
+                    h2timeFitResVtrkDoca.get(new Coordinate(i, j, k)).setTitleY("Time (ns)");  
+
+                    hNm = String.format("Sector %d timeFitResS%dTh%02d", i, j, k);
+                    h1timeFitRes.put(new Coordinate(i, j, k), new H1F(hNm, 150, -timeAxisMax[j]/2, timeAxisMax[j]/2));
+                    hTtl = String.format("time - fit (Sec=%d, SL=%d, th(%2.1f,%2.1f))", i, j + 1, thEdgeVzL[k], thEdgeVzH[k]);
+                    h1timeFitRes.get(new Coordinate(i, j, k)).setTitle(hTtl);
+                    h1timeFitRes.get(new Coordinate(i, j, k)).setTitleX("Time (ns)");  
+
                 }
                 //SimpleH3D> h3BTXmap
                 for (int k = 0; k < nThBinsVz2; k++) { 
@@ -796,10 +812,16 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 
     }    
     
+    private void makeTimeFitResiduals() {
+        //h2timeFitResVtrkDoca, h1timeFitRes
+    }
+    
     private void drawFitLinesNew(JFrame fitControlFrame, int Sec, int SL) {
         int iSec = Sec - 1, iSL = SL - 1;
         int nSkippedThBins = 4; //Skipping marginal 4 bins from both sides
         String Title = "";
+        
+        JTabbedPane tabbedPane = new JTabbedPane();
         
         EmbeddedCanvas canvas = new EmbeddedCanvas();
         canvas.setSize(3 * 400, 3 * 400);
@@ -815,17 +837,33 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
             canvas.getPad(k - nSkippedThBins).setTitle(Title);
             canvas.setPadTitlesX("trkDoca");
             canvas.setPadTitlesY("time (ns)");
-        }
+        }        
+        tabbedPane.add(canvas,"t vs x (fits)");
+        
+        EmbeddedCanvas canvas2 = new EmbeddedCanvas();
+        canvas2.setSize(3 * 400, 3 * 400);
+        canvas2.divide(3, 3);
+        for (int k = nSkippedThBins; k < nThBinsVz - nSkippedThBins; k++) {
+            canvas2.cd(k - nSkippedThBins);
+            Title = "Sec=" + Sec + " SL=" + SL
+                    + " theta=(" + thEdgeVzL[k] + "," + thEdgeVzH[k] + ")"
+                    + " indvFitCol=" + colIndivFit;
+            canvas2.draw(h2timeVtrkDoca.get(new Coordinate(iSec, iSL, k)).getProfileX());
+            canvas2.draw(mapOfFitLinesX.get(new Coordinate(iSec, iSL, k)), "same");
+            //canvas.draw(mapOfFitLinesX.get(new Coordinate(i, j, k)), "same");                    
+            canvas2.getPad(k - nSkippedThBins).setTitle(Title);
+            canvas2.setPadTitlesX("trkDoca");
+            canvas2.setPadTitlesY("time (ns)");
+        }        
+        tabbedPane.add(canvas2,"X-profiles & fits");    
         
         JFrame frame = new JFrame();
-        
-
         Dimension screensize = Toolkit.getDefaultToolkit().getScreenSize();
         frame.setSize((int)(screensize.getWidth()*.9),(int)(screensize.getHeight()*.9));
         //frame.setLocationRelativeTo(null); //Centers on the default screen
         //Following line makes the canvas or frame open in the same screen where the fitCtrolUI is.
         frame.setLocationRelativeTo(fitControlFrame);//centered w.r.t fitControlUI frame
-        frame.add(canvas);
+        frame.add(tabbedPane);//(canvas);
         frame.setVisible(true);         
     }
     

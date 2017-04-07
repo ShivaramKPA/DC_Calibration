@@ -21,28 +21,28 @@ public class DCTimeFunction {
 
 	private int superlayer;
 	private double thetaDeg;
-	private double doca;
+	private double docaNorm;
 	private double[] par;
         private double bfield;
 
-	public DCTimeFunction(int superlayer, double thetaDeg, double doca, double[] par) {
+	public DCTimeFunction(int superlayer, double thetaDeg, double docaNorm, double[] par) {
 		this.superlayer = superlayer;
 		this.thetaDeg = thetaDeg;
-		this.doca = doca;
+		this.docaNorm = docaNorm;
 		this.par = par;
 	}
 
-	public DCTimeFunction(int superlayer, double thetaDeg, double doca, double bfield, double[] par) {
+	public DCTimeFunction(int superlayer, double thetaDeg, double docaNorm, double bfield, double[] par) {
 		this.superlayer = superlayer;
 		this.thetaDeg = thetaDeg;
-		this.doca = doca;
+		this.docaNorm = docaNorm;
 		this.par = par;                
 		this.bfield = bfield; 
 	}  
         
 	public double linearFit() {
 		double dMax = 2 * wpdist[superlayer];
-		double x = doca * dMax;
+		double x = docaNorm * dMax;
 		double v0Par = par[0];
 		return x / v0Par;
 	}
@@ -50,7 +50,7 @@ public class DCTimeFunction {
 	public double nonLinearFit() {
 		double dMax = 2 * wpdist[superlayer];
 		// constant to avoid repeated calc. (see above main())
-		double x = doca * dMax;
+		double x = docaNorm * dMax;
 		double v0Par = par[0];
 		double deltanm = par[1];
 		double tMax = par[2];
@@ -80,9 +80,9 @@ public class DCTimeFunction {
 		double alpha = isReducedAngle(thetaDeg); // = 0.0; //Local angle in degrees.
 		//System.out.println("this is alpha " + alpha);
 		double cos30minusalpha = Math.cos((30. - alpha) / rad2deg); // =Math.cos(Math.toRadians(30.-alpha));
-		double xhat = x / dMax;
-		double dmaxalpha = dMax * cos30minusalpha;
-                double xhatalpha = x/dmaxalpha;
+		double xhat = x / dMax; //docaNorm w.r.t dMax at th=30 i.e. at the vertex of the hexagone
+		double dmaxalpha = dMax * cos30minusalpha;// dMax at the local angle th=alpha
+                double xhatalpha = x/dmaxalpha; //docaNorm w.r.t. dMax at the local angle alpha
                 
 		// now calculate the dist to time function for theta = 'alpha' deg.
 		// Assume a functional form with the SAME POWERS N and M and

@@ -555,7 +555,6 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
         frame.addWindowListener(this);
         try {
             PipedOutputStream pout = new PipedOutputStream(this.pin);
-
             System.setOut(new PrintStream(pout, true));
         } catch (java.io.IOException io) {
             textArea.append("Couldn't redirect STDOUT to this console\n" + io.getMessage());

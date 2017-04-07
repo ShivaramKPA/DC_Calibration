@@ -35,6 +35,7 @@ public class ReadT2DparsFromCCDB {
                     + provider.isTypeTableAvailable("/calibration/dc/time_to_distance/tvsx_devel_v2"));
         
         provider.setDefaultVariation("dc_test1");
+        //provider.setDefaultVariation("default");
         Assignment asgmt = provider.getData("/calibration/dc/time_to_distance/tvsx_devel_v2");
         for(Vector<Double> row : asgmt.getTableDouble()){
             for(Double cell: row){

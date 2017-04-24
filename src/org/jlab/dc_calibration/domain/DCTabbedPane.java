@@ -70,6 +70,5 @@ public class DCTabbedPane {
 			test.addCanvasToPane("sector " + (i + 1), new EmbeddedCanvas());
 		}
 		test.showFrame();
-
 	}
 }

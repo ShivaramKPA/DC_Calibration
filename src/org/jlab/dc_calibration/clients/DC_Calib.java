@@ -406,17 +406,18 @@ public class DC_Calib extends WindowAdapter implements WindowListener, ActionLis
         centerPanel.add(buttonPanel, BorderLayout.CENTER);
         centerPanel.add(Box.createVerticalGlue(), BorderLayout.SOUTH);
 
-        JScrollPane scroll = new JScrollPane(textArea);
+        JScrollPane scroll = new JScrollPane (textArea, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, 
+                JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);        
+        //JScrollPane scroll = new JScrollPane(textArea);
         scroll.setPreferredSize(new Dimension((int) (width / 2), (int) (height / 2)));
-        scroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
-        centerPanel.add(scroll, BorderLayout.EAST);
-
+        //scroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+        centerPanel.add(scroll, BorderLayout.EAST);        
     }
 
     private void addToTextArea() {
         textArea = new JTextArea();
         textArea.setEditable(false);
-        textArea.setLineWrap(true);
+        textArea.setLineWrap(false);//(true);//this makes horizontal scroll bar to show up as well.
         textArea.setWrapStyleWord(true);
         DefaultCaret caret = (DefaultCaret) textArea.getCaret();
         caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);

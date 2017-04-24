@@ -10,10 +10,13 @@ import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JFrame;
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
+import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
 import javax.swing.Timer;
+import javax.swing.text.DefaultEditorKit;
 import javax.swing.text.JTextComponent;
 import static org.jlab.dc_calibration.domain.Constants.nFitPars;
 import static org.jlab.dc_calibration.domain.Constants.nSectors;
@@ -51,6 +54,7 @@ public class FitControlUI extends javax.swing.JFrame {
      */
     public FitControlUI(TimeToDistanceFitter fitter) {
         initComponents();
+        addJPopupMenuToJTextArea1();
         getParametersFromCCDB();
         this.fitter = fitter;
         /*
@@ -78,6 +82,20 @@ public class FitControlUI extends javax.swing.JFrame {
             Logger.getLogger(FitControlUI.class.getName()).log(Level.SEVERE, null, ex);
         }
         */
+    }
+
+    private void addJPopupMenuToJTextArea1() {
+      JPopupMenu popup = new JPopupMenu();
+      JMenuItem item = new JMenuItem(new DefaultEditorKit.CutAction());
+      item.setText("Cut");
+      popup.add(item);
+      item = new JMenuItem(new DefaultEditorKit.CopyAction());
+      item.setText("Copy");
+      popup.add(item);
+      item = new JMenuItem(new DefaultEditorKit.PasteAction());
+      item.setText("Paste");
+      popup.add(item);
+      jTextArea1.setComponentPopupMenu(popup);        
     }
     
     private void getParametersFromCCDB() {

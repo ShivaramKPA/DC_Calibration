@@ -35,6 +35,7 @@ import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
+import javax.swing.SwingUtilities;
 
 import org.freehep.math.minuit.FunctionMinimum;
 import org.freehep.math.minuit.MnMigrad;
@@ -65,6 +66,9 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
     private DataBank bnkTrks;
     private int nTrks;
     private int colIndivFit = 1, colSimulFit = 4;
+    int [][][] segmentIDs; //[nTrks][3][2] //3 for crosses per track, 2 for segms per cross.
+    double [][][] trkChi2;//Size equals the # of tracks for the event
+    int nTracks = 0;
 
     private Map<Coordinate, H1F> hArrWire = new HashMap<Coordinate, H1F>();
     private Map<Coordinate, H1F> h1ThSL = new HashMap<Coordinate, H1F>();
@@ -80,7 +84,8 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
     private Map<Coordinate, H1F> h1wire4Dar = new HashMap<Coordinate, H1F>();// no ratio here
     private Map<Coordinate, H1F> h1avgWire4Dar = new HashMap<Coordinate, H1F>();// no ratio here
     private Map<Coordinate, H1F> h1fitChisqProbSeg4Dar = new HashMap<Coordinate, H1F>();
-    private Map<Coordinate, H2F> h2timeVtrkDoca = new HashMap<Coordinate, H2F>();
+    //private Map<Coordinate, H2F> h2timeVtrkDoca = new HashMap<Coordinate, H2F>();
+    public Map<Coordinate, H2F> h2timeVtrkDoca = new HashMap<Coordinate, H2F>();//made it public - to be able to access it from SliceViewer
     private Map<Coordinate, H2F> h2timeVtrkDocaVZ = new HashMap<Coordinate, H2F>();
     private Map<Coordinate, H2F> h2timeFitResVtrkDoca = new HashMap<Coordinate, H2F>();//time - fitLine
     private Map<Coordinate, H1F> h1timeFitRes = new HashMap<Coordinate, H1F>();  //time - fitLine
@@ -148,7 +153,7 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
     
     
     private H1F h1bField;
-    private H1F h1fitChisqProb;
+    private H1F h1fitChisqProb, h1fitChi2Trk, h1fitChi2Trk2, h1ndfTrk, h1zVtx;
     private H2F testHist;//, timeResVsTrkDoca;
     private Map<Coordinate, H1F> h1timeRes = new HashMap<Coordinate, H1F>();
     private Map<Coordinate, H2F> h2timeResVsTrkDoca = new HashMap<Coordinate, H2F>();
@@ -194,6 +199,14 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
         h1bField.setTitle("B field");        h1bField.setLineColor(2);
         h1fitChisqProb = new H1F("fitChisqProb",120,0.0,1.2);
         h1fitChisqProb.setTitle("fitChisqProb");        h1fitChisqProb.setLineColor(2);
+        h1fitChi2Trk = new H1F("fitChi2Trk",100,0.0,8000);//1.2);
+        h1fitChi2Trk.setTitle("fitChi2Trk");        h1fitChi2Trk.setLineColor(2);
+        h1fitChi2Trk2 = new H1F("fitChi2Trk2",100,0.0,8000);//To see how a zVtx cut affects
+        h1fitChi2Trk2.setTitle("fitChi2Trk2");        h1fitChi2Trk2.setLineColor(2);
+        h1ndfTrk = new H1F("ndfTrk",80,5.0,45);
+        h1ndfTrk.setTitle("ndfTrk");        h1ndfTrk.setLineColor(2);
+        h1zVtx = new H1F("zVtx", 200, -50.0, 50.0);
+        h1zVtx.setTitle("zVtx");        h1zVtx.setLineColor(2);
         testHist = new H2F("A test of superlayer6 at thetabin6", 200, 0.0, 1.0, 150, 0.0, 200.0);
         TStyle.createAttributes();
         String hNm = "";
@@ -377,7 +390,6 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
                     hTtl = String.format("time - fit (Sec=%d, SL=%d, th(%2.1f,%2.1f))", i, j + 1, thEdgeVzL[k], thEdgeVzH[k]);
                     h1timeFitRes.get(new Coordinate(i, j, k)).setTitle(hTtl);
                     h1timeFitRes.get(new Coordinate(i, j, k)).setTitleX("Time (ns)");  
-
                 }
                 //SimpleH3D> h3BTXmap
                 for (int k = 0; k < nThBinsVz2; k++) { 
@@ -497,13 +509,16 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
     protected void processData() {
         int counter = 0;
         int icounter = 0;
-        /*
-		for (String str : fileArray) {
-			reader.addFile(str);
-		}
-                reader.open();
-         */
-        //readerH.open("src/files/DCRBREC.hipo");
+        int ndf = -1;
+        double chi2 = -1.0, Vtx0_z = -10000.0;
+        
+//       
+//		for (String str : fileArray) {
+//			reader.addFile(str);
+//		}
+//                reader.open();
+//         
+//        //readerH.open("src/files/DCRBREC.hipo");
 
         for (String str : fileArray) { //Now reading multiple hipo files.
             System.out.println("Ready to Open & read " + str);
@@ -517,24 +532,40 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
                 }
                 //EvioDataEvent event = reader.getNextEvent();
                 DataEvent event = readerH.getNextEvent();
-                /*  //got 'bank not found' message for each event.
-			ProcessTBSegmentTrajectory tbSegmentTrajectory = new ProcessTBSegmentTrajectory(event);
-			if (tbSegmentTrajectory.getNsegs() > 0) {
-				counter++;
-			}
-                 */
+//                  //got 'bank not found' message for each event.
+//			ProcessTBSegmentTrajectory tbSegmentTrajectory = new ProcessTBSegmentTrajectory(event);
+//			if (tbSegmentTrajectory.getNsegs() > 0) {
+//				counter++;
+//			}
+//                 
                 if (event.hasBank("TimeBasedTrkg::TBSegmentTrajectory")) {
                     counter++;
                 }
 
-                if (event.hasBank("TimeBasedTrkg::TBHits") && event.hasBank("TimeBasedTrkg::TBSegments")) {// && event.hasBank("TimeBasedTrkg::TBSegmentTrajectory") &&
-                    // event.hasBank("TimeBasedTrkg::TBTracks")
+                if (event.hasBank("TimeBasedTrkg::TBHits") && event.hasBank("TimeBasedTrkg::TBSegments")//) {// && event.hasBank("TimeBasedTrkg::TBSegmentTrajectory") &&
+                    && event.hasBank("TimeBasedTrkg::TBTracks") ) {
+                    
+                    processTBTracksAndCrosses(event); //Identify corresponding segments (4/13/17)
+                    
                     ProcessTBTracks tbTracks = new ProcessTBTracks(event);
                     if (tbTracks.getNTrks() > 0) {
-                        processTBhits(event);
-                        processTBSegments(event);
-                    }
+                        //processTBhits(event);
+                        //processTBSegments(event);
 
+                        //===========
+                        bnkTrks = (DataBank) event.getBank("TimeBasedTrkg::TBTracks");
+                        for (int j = 0; j < bnkTrks.rows(); j++) {
+                            chi2 = (double) bnkTrks.getFloat("chi2", j);
+                            ndf = bnkTrks.getInt("ndf", j);
+                            Vtx0_z = (double) bnkTrks.getFloat("Vtx0_z", j);
+                            h1fitChi2Trk.fill(chi2);
+                            h1ndfTrk.fill(1.0*ndf);
+                            h1zVtx.fill(Vtx0_z);
+                            if(Vtx0_z > -3.0 && Vtx0_z<5.0) ///if(Math.abs(Vtx0_z)<10.0) 
+                                h1fitChi2Trk2.fill(chi2);
+                        }
+                        //===========
+                    }
                 }
 
             }
@@ -544,6 +575,66 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
         saveNtuple();
     }
 
+    private void processTBTracksAndCrosses(DataEvent event) {
+        int [][] crossIDs;//[nTrk][3], with [3] for 3 crosses from R1/2/3
+        double [] trkFitChi2; //[nTrk]
+        
+        int [] crossID = {-1, -1, -1};
+        //int [][][] segmentIDs; //[nTracks][3][2] //3 for crosses per track, 2 for segms per cross. //Now global
+        //double [] trkChi2;//Size equals the # of tracks for the event //Now global
+        //int nTracks = 0; //Now global
+        int segmID1 = -1, segmID2 = -1, id = -1;
+        
+        double chi2 = 1000000.0;
+        boolean hasTracks = event.hasBank("TimeBasedTrkg::TBTracks");
+        boolean hasCrosses = event.hasBank("TimeBasedTrkg::TBCrosses");
+        boolean hasSegments = event.hasBank("TimeBasedTrkg::TBSegments");
+        DataBank bnkTracks, bnkCrosses, bnkSegments;
+        if(hasTracks) {        
+            bnkTracks = (DataBank) event.getBank("TimeBasedTrkg::TBTracks");
+            nTracks = bnkTracks.rows();    
+            crossIDs = new int [nTracks][3];
+            trkFitChi2 = new double [nTracks];
+            //# of valid segments: nTracks*3*2, because each will have 3 crosses, and each cross has 2 segments.
+            segmentIDs = new int [nTracks][3][2];
+            trkChi2 = new double [nTracks][3][2];
+            for (int j = 0; j < bnkTracks.rows(); j++) {
+                crossIDs[j][0] = bnkTracks.getInt("Cross1_ID", j);//Region 1
+                crossIDs[j][1] = bnkTracks.getInt("Cross2_ID", j);//R2
+                crossIDs[j][2] = bnkTracks.getInt("Cross3_ID", j);//R3
+                trkFitChi2[j] = (double) bnkTracks.getFloat("chi2", j);
+            }
+
+            if (hasCrosses) {
+                bnkCrosses = (DataBank) event.getBank("TimeBasedTrkg::TBCrosses");
+                for (int i = 0; i < bnkCrosses.rows(); i++) {
+                    id = bnkCrosses.getInt("id", i);
+                    segmID1 = bnkCrosses.getInt("Segment1_ID", i);
+                    segmID2 = bnkCrosses.getInt("Segment2_ID", i);
+                    for (int j = 0; j < nTracks; j++) {
+                        for (int k = 0; k < 3; k++) {                            
+                            if (id == crossIDs[j][k]) {
+//                                System.out.println("nTrks=" + nTracks
+//                                        + " CrossIndex=" + k + " id = " + bnkCrosses.getInt("id", i)
+//                                        + " region = " + bnkCrosses.getInt("region", i));
+                                segmentIDs[j][k][0] = segmID1;
+                                segmentIDs[j][k][1] = segmID2;
+                                trkChi2[j][k][0] = trkFitChi2[j];
+                                trkChi2[j][k][1] = trkFitChi2[j];
+//                                System.out.println("crossID trkChi2  seg1id seg2id: " + k + " " + chi2 
+//                                        + " " + segmentIDs[j][k][0] + " " + segmentIDs[j][k][1]);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            processTBhits(event);
+            if(hasSegments)
+                processTBSegments(segmentIDs, trkChi2, event);
+        }
+    }
+    
     //private void processTBhits(EvioDataEvent event) {
     private void processTBhits(DataEvent event) {
         double bFieldVal = 0.0;
@@ -580,22 +671,54 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
     }
 
     //private void processTBSegments(EvioDataEvent event) {
-    private void processTBSegments(DataEvent event) {
-
+    private void processTBSegments(int [][][] segmIDs, double [][][] trkChi2, DataEvent event) {
+        boolean validSegm = false;
+        double trkChiSq = 1000000.0;//Just giving a very big value of trk-fit-chi-square (for bad fits, its a big #)
         gSegmThBinMapTBSegments = new HashMap<Integer, Integer>();
         gSegmAvgWireTBSegments = new HashMap<Integer, Double>();
         gFitChisqProbTBSegments = new HashMap<Integer, Double>();
 
         bnkSegs = (DataBank) event.getBank("TimeBasedTrkg::TBSegments");
-        int nHitsInSeg = 0;
+        int nHitsInSeg = 0, idSeg = -1;
         for (int j = 0; j < bnkSegs.rows(); j++) {
             int superlayer = bnkSegs.getInt("superlayer", j);
             int sector = bnkSegs.getInt("sector", j);
+            //System.out.println("superlayer sector" + superlayer + " " + sector);
+
+            //Check if any of these segments matches with those associated with the available tracks
+            //   Else continue
+            idSeg = bnkSegs.getInt("id", j);
+            validSegm = false;
+            //System.out.println("nTracks: " + nTracks);
+            for (int i = 0; i < nTracks; i++) {
+                for (int k = 0; k < 3; k++) {
+                    for (int l = 0; l < 2; l++) {  
+                        //System.out.println("idSeg  segTrks: " + idSeg + " " + segmentIDs[i][k][l]);
+                       if(idSeg == segmIDs[i][k][l]) { //segmentIDs[i][k][l]
+                           validSegm = true;
+                           trkChiSq = trkChi2[i][k][l];
+                       }
+                    }                    
+                }                
+            }
+            if(validSegm == false) continue;
+            if(trkChiSq > 2000.0) continue;
+            
+            //int [][][] segmentIDs; //[nTrks][3][2] //3 for crosses per track, 2 for segms per cross. //Now global
+            //double [] trkChi2;//Size equals the # of tracks for the event //Now global
+            //int nTracks = 0; //Now global
+            
+            
+            //It turns out there were cases of sector==1 & superlayer ==1 in pass2 data (4/11/17)
+            //   causing the program to crash. Therefore I had to put the following line.
+            if(sector < 1 || superlayer < 1) continue;
+            
             //gSegmAvgWireTBSegments.put(bnkSegs.getInt("ID", j), bnkSegs.getDouble("avgWire", j));
             //gFitChisqProbTBSegments.put(bnkSegs.getInt("ID", j), bnkSegs.getDouble("fitChisqProb", j));
             h1fitChisqProb.fill((double) bnkSegs.getFloat("fitChisqProb", j));
             
             double thDeg = rad2deg * Math.atan2((double) bnkSegs.getFloat("fitSlope", j), 1.0);
+            //System.out.println("superlayer thDeg " + superlayer + " " + thDeg);
             h1ThSL.get(new Coordinate(bnkSegs.getInt("superlayer", j) - 1)).fill(thDeg);
             for (int h = 1; h <= 12; h++) {
                 if (bnkSegs.getInt("Hit" + h + "_ID", j) > -1) {
@@ -685,8 +808,8 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
         
         createCanvasMaps(); 
         System.out.println("Called createCanvasMaps(); ");
-        drawQuickTestPlots();
-        System.out.println("Called drawQuickTestPlots();");
+//        drawQuickTestPlots();
+//        System.out.println("Called drawQuickTestPlots();");
         
         try {
             runFitterNew(textArea, Sec, SL, xMeanErrorType, xNormLow, xNormHigh, fixIt, pLow, pInit, pHigh);
@@ -812,7 +935,15 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
 
     }    
     
-    private void makeTimeFitResiduals() {
+    private void makeTimeFitResiduals(int Sec, int SL) {
+        int iSec = Sec - 1, iSL = SL - 1;
+        for (int k = 0; k < nThBinsVz; k++) {
+            H2F h2tmp = h2timeVtrkDoca.get(new Coordinate(iSec, iSL, k));
+            //h2tmp.add
+            for (int l = 0; l <10; l++) {
+                
+            } 
+        }
         //h2timeFitResVtrkDoca, h1timeFitRes
     }
     
@@ -918,16 +1049,26 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
     }
 
     protected void drawQuickTestPlots() {
+        DrawResidualsInTabbedPanes();
+        
         int nEntries = h1bField.getEntries();//.getDataSize(1);
         System.out.println("# of entries in h1bField = " + nEntries);
         // this is temp for testHist
-        EmbeddedCanvas canv = new EmbeddedCanvas(); canv.setSize(500, 500); 
+        EmbeddedCanvas canv = new EmbeddedCanvas(); canv.setSize(500, 500);         
         canv.cd(0);
         canv.draw(h1bField);
         canv.save("src/images/test_bField.png");
-        EmbeddedCanvas canv1 = new EmbeddedCanvas(); canv1.setSize(500, 500); 
+        EmbeddedCanvas canv1 = new EmbeddedCanvas(); canv1.setSize(1000, 1000); 
+        canv1.divide(2,2);
         canv1.cd(0);
-        canv1.draw(h1fitChisqProb);
+        //canv1.draw(h1fitChisqProb);
+        canv1.draw(h1fitChi2Trk);
+        canv1.cd(1);
+        canv1.draw(h1ndfTrk);
+        canv1.cd(2);
+        canv1.draw(h1zVtx);
+        canv1.cd(3);
+        canv1.draw(h1fitChi2Trk2);//(h1fitChisqProb);
         canv1.save("src/images/test_fitChisqProb.png");
     }
     
@@ -1601,11 +1742,24 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
         });        
     }    
     
+    public void SliceViewer(TimeToDistanceFitter fitter) {
+        //Create a frame and show it through SwingUtilities
+        //   It doesn't require related methods and variables to be of static type
+        SwingUtilities.invokeLater(() -> {
+            new SliceViewer("Slice Viewer").create(fitter); 
+        });        
+    }
     
     @Override
     public void run() {
 
         processData();
+
+        drawQuickTestPlots();
+        System.out.println("Called drawQuickTestPlots();");
+        
+        SliceViewer(this);
+        
         OpenFitControlUI(this);
         //drawHistograms(); //Disabled 4/3/17 - to control it by clicks in FitConrolUI.
     }
@@ -1619,34 +1773,12 @@ public class TimeToDistanceFitter implements ActionListener, Runnable {
         String fileName2;
 
         fileName = "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.1.evio";
-        // fileName2 =
-        // "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.2.evio";
         ArrayList<String> fileArray = new ArrayList<String>();
-        // fileArray.add("/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/elec/cookedFiles/out_out_1.evio");
-        // fileArray.add("/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/elec/cookedFiles/out_out_10.evio");
-        // fileArray.add("/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/elec/cookedFiles/out_out_2.evio");
-        // fileArray.add("/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/elec/cookedFiles/out_out_3.evio");
-
-        // fileArray.add("/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/pion/cookedFiles/out_out_1.evio");
-        // fileArray.add("/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/pion/cookedFiles/out_out_10.evio");
-        // fileArray.add("/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/pion/cookedFiles/out_out_2.evio");
-        // fileArray.add("/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/pion/cookedFiles/out_out_4.evio");
         fileArray.add("/Users/michaelkunkel/WORK/CLAS/CLAS12/DC_Calibration/data/Calibration/pion/mergedFiles/cookedFiles/out_out_1.evio");
         fileArray.add("/Users/michaelkunkel/WORK/CLAS/CLAS12/DC_Calibration/data/Calibration/pion/mergedFiles/cookedFiles/out_out_10.evio");
         fileArray.add("/Users/michaelkunkel/WORK/CLAS/CLAS12/DC_Calibration/data/Calibration/pion/mergedFiles/cookedFiles/out_out_2.evio");
         fileArray.add("/Users/michaelkunkel/WORK/CLAS/CLAS12/DC_Calibration/data/Calibration/pion/mergedFiles/cookedFiles/out_out_4.evio");
 
-        // fileArray.add(fileName);
-        // fileArray.add(
-        // "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.1.evio");
-        // fileArray.add(
-        // "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.3.evio");
-        //
-        // fileArray.add(
-        // "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.4.evio");
-        //
-        // fileArray.add(
-        // "/Volumes/Mac_Storage/Work_Codes/CLAS12/DC_Calibration/data/out_clasdispr.00.e11.000.emn0.75tmn.09.xs65.61nb.dis.5.evio");
         TimeToDistanceFitter rd = new TimeToDistanceFitter(fileArray, true);
 
         rd.processData();
